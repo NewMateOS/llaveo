@@ -1,0 +1,236 @@
+---
+// Componente de botón de favoritos
+export interface Props {
+  propertyId: string;
+  isFavorite?: boolean;
+  onToggle?: (isFavorite: boolean) => void;
+}
+
+const { propertyId, isFavorite = false, onToggle } = Astro.props;
+---
+
+<button 
+  id={`favorite-btn-${propertyId}`}
+  class="favorite-btn group flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-200 hover:scale-110 active:scale-95"
+  data-property-id={propertyId}
+  data-is-favorite={isFavorite}
+  style={`
+    background: ${isFavorite ? 'var(--primary)' : 'transparent'};
+    border-color: var(--primary);
+    color: ${isFavorite ? 'white' : 'var(--primary)'};
+  `}
+  onclick={`toggleFavorite('${propertyId}')`}
+  title={isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+>
+  <svg 
+    class="w-5 h-5 transition-all duration-200 group-hover:scale-110" 
+    fill={isFavorite ? 'currentColor' : 'none'} 
+    stroke="currentColor" 
+    viewBox="0 0 24 24"
+  >
+    <path 
+      stroke-linecap="round" 
+      stroke-linejoin="round" 
+      stroke-width="2" 
+      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+    />
+  </svg>
+</button>
+
+<script>
+  import { supabase } from '../lib/supabase';
+
+  // Estado global de favoritos
+  let favoritesState = new Map();
+
+  // Función para obtener token de acceso
+  async function getAccessToken() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session?.access_token || null;
+    } catch (error) {
+      console.error('Error obteniendo token:', error);
+      return null;
+    }
+  }
+
+  // Función para verificar si una propiedad está en favoritos
+  async function checkFavoriteStatus(propertyId) {
+    const token = await getAccessToken();
+    if (!token) return false;
+
+    try {
+      const response = await fetch('/api/favorites', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const { favorites } = await response.json();
+        return favorites.some(fav => fav.property_id === propertyId);
+      }
+    } catch (error) {
+      console.error('Error checking favorite status:', error);
+    }
+    
+    return false;
+  }
+
+  // Función para alternar favorito
+  async function toggleFavorite(propertyId: string) {
+    const token = await getAccessToken();
+    if (!token) {
+      // Si no hay sesión, mostrar modal de login
+      if ((window as any).showLoginModal) {
+        (window as any).showLoginModal();
+      } else {
+        alert('Debes iniciar sesión para agregar favoritos');
+      }
+      return;
+    }
+
+    const button = document.getElementById(`favorite-btn-${propertyId}`) as HTMLButtonElement;
+    if (!button) return;
+
+    // Deshabilitar botón temporalmente
+    button.disabled = true;
+    button.style.opacity = '0.6';
+
+    try {
+      const currentState = favoritesState.get(propertyId) || false;
+      const action = currentState ? 'remove' : 'add';
+
+      const response = await fetch('/api/favorites', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          property_id: propertyId,
+          action: action
+        })
+      });
+
+      if (response.ok) {
+        const { isFavorite, message } = await response.json();
+        
+        // Actualizar estado
+        favoritesState.set(propertyId, isFavorite);
+        
+        // Actualizar UI
+        updateFavoriteButton(propertyId, isFavorite);
+        
+        // Mostrar mensaje de éxito
+        showFavoriteMessage(message, 'success');
+        
+        // Llamar callback si existe
+        if ((window as any).onFavoriteToggle) {
+          (window as any).onFavoriteToggle(propertyId, isFavorite);
+        }
+      } else {
+        const { error } = await response.json();
+        showFavoriteMessage(error, 'error');
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      showFavoriteMessage('Error al actualizar favoritos', 'error');
+    } finally {
+      // Rehabilitar botón
+      button.disabled = false;
+      button.style.opacity = '1';
+    }
+  }
+
+  // Función para actualizar el botón de favoritos
+  function updateFavoriteButton(propertyId, isFavorite) {
+    const button = document.getElementById(`favorite-btn-${propertyId}`);
+    if (!button) return;
+
+    button.setAttribute('data-is-favorite', isFavorite);
+    button.title = isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos';
+
+    // Actualizar estilos
+    button.style.background = isFavorite ? 'var(--primary)' : 'transparent';
+    button.style.color = isFavorite ? 'white' : 'var(--primary)';
+
+    // Actualizar SVG
+    const svg = button.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('fill', isFavorite ? 'currentColor' : 'none');
+    }
+  }
+
+  // Función para mostrar mensajes
+  function showFavoriteMessage(message, type) {
+    // Crear toast notification
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full ${
+      type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+    }`;
+    toast.textContent = message;
+    
+    document.body.appendChild(toast);
+    
+    // Animar entrada
+    setTimeout(() => {
+      toast.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Remover después de 3 segundos
+    setTimeout(() => {
+      toast.style.transform = 'translateX(100%)';
+      setTimeout(() => {
+        document.body.removeChild(toast);
+      }, 300);
+    }, 3000);
+  }
+
+  // Función para cargar estado inicial de favoritos
+  async function loadFavoritesState() {
+    const token = await getAccessToken();
+    if (!token) return;
+
+    try {
+      const response = await fetch('/api/favorites', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const { favorites } = await response.json();
+        favorites.forEach(fav => {
+          favoritesState.set(fav.property_id, true);
+          updateFavoriteButton(fav.property_id, true);
+        });
+      }
+    } catch (error) {
+      console.error('Error loading favorites:', error);
+    }
+  }
+
+  // Función para inicializar favoritos en una página
+  function initializeFavorites() {
+    const favoriteButtons = document.querySelectorAll('.favorite-btn');
+    favoriteButtons.forEach(button => {
+      const propertyId = button.getAttribute('data-property-id');
+      const isFavorite = button.getAttribute('data-is-favorite') === 'true';
+      favoritesState.set(propertyId, isFavorite);
+    });
+  }
+
+  // Funciones globales
+  (window as any).toggleFavorite = toggleFavorite;
+  (window as any).loadFavoritesState = loadFavoritesState;
+  (window as any).initializeFavorites = initializeFavorites;
+
+  // Inicializar cuando se carga la página
+  document.addEventListener('DOMContentLoaded', () => {
+    initializeFavorites();
+    loadFavoritesState();
+  });
+</script>

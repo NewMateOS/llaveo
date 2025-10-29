@@ -1,0 +1,442 @@
+---
+import SearchBar from '../components/SearchBar.astro';
+import FavoriteButton from '../components/FavoriteButton.astro';
+
+const api = '/api/search';
+const url = new URL(api, Astro.request.url);
+Astro.url.searchParams.forEach((v,k)=>url.searchParams.set(k,v));
+
+let items: any[] = [];
+try {
+  const res = await fetch(url.toString());
+  if (res.ok) {
+    const data = await res.json();
+    items = data.items || [];
+  } else {
+    console.error('Error fetching search results:', res.status, res.statusText);
+  }
+} catch (error) {
+  console.error('Error fetching search results:', error);
+  // Datos de prueba si no hay conexión a la base de datos
+  items = [
+    {
+      id: '1',
+      title: 'Apartamento en el centro de Madrid',
+      description: 'Hermoso apartamento en el corazón de Madrid',
+      price: 350000,
+      city: 'Madrid',
+      address: 'Calle Gran Vía, 123',
+      rooms: 3,
+      baths: 2,
+      area_m2: 85,
+      status: 'venta',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      property_images: [
+        { url: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop', sort_order: 0 }
+      ]
+    },
+    {
+      id: '2',
+      title: 'Casa con jardín en Barcelona',
+      description: 'Casa familiar con jardín privado',
+      price: 450000,
+      city: 'Barcelona',
+      address: 'Carrer de la Pau, 45',
+      rooms: 4,
+      baths: 3,
+      area_m2: 120,
+      status: 'venta',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      property_images: [
+        { url: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&h=600&fit=crop', sort_order: 0 }
+      ]
+    },
+    {
+      id: '3',
+      title: 'Piso moderno en Valencia',
+      description: 'Piso completamente reformado con acabados de lujo',
+      price: 280000,
+      city: 'Valencia',
+      address: 'Avenida del Puerto, 78',
+      rooms: 2,
+      baths: 2,
+      area_m2: 75,
+      status: 'venta',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      property_images: [
+        { url: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop', sort_order: 0 }
+      ]
+    }
+  ];
+}
+
+function firstImg(arr) { 
+  if (!arr || !arr.length) return ''; 
+  return arr.sort((a,b)=>(a.sort_order??0)-(b.sort_order??0))[0].url;
+}
+const brand = (import.meta as any).env.PUBLIC_BRAND_NAME || 'LLAVE';
+---
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Resultados · {brand}</title>
+    <style>
+      :root {
+        --primary: #EB9561;
+        --primary-light: #F2B085;
+        --primary-dark: #D17A3F;
+        --secondary: #2D3748;
+        --accent: #F7FAFC;
+        --text-primary: #1A202C;
+        --text-secondary: #4A5568;
+        --text-muted: #718096;
+        --surface: #FFFFFF;
+        --surface-elevated: #F7FAFC;
+        --border: #E2E8F0;
+        --shadow: rgba(235, 149, 97, 0.1);
+        --shadow-lg: rgba(235, 149, 97, 0.15);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-gray-50">
+    <!-- Header - Material Design App Bar -->
+    <header class="bg-white sticky top-0 z-40 shadow-sm border-b border-gray-100">
+      <div class="max-w-7xl mx-auto px-6 py-4">
+        <div class="flex justify-between items-center">
+          <!-- Logo Section -->
+          <div class="flex items-center gap-3">
+            <a href="/" class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style="background: var(--primary);">
+                <span class="text-white font-bold text-lg">L</span>
+              </div>
+              <div class="text-2xl font-bold" style="color: var(--text-primary);">{brand}</div>
+            </a>
+          </div>
+          
+          <!-- Back Button -->
+          <a href="/" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors duration-200">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Nueva búsqueda
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+      <!-- Page Header -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h1 class="text-3xl font-bold" style="color: var(--text-primary);">Resultados de búsqueda</h1>
+            <p class="text-gray-600 mt-2">{items.length} propiedades encontradas</p>
+          </div>
+          
+          <!-- Filter Toggle -->
+          <button 
+            id="filterToggle"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 hover:bg-gray-50 transition-colors duration-200"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+            </svg>
+            Filtros
+          </button>
+        </div>
+        
+        <!-- Search Bar -->
+        <div class="mb-6">
+          <SearchBar value={Astro.url.searchParams.get('q') || ''} />
+        </div>
+      </div>
+
+          <!-- Results Grid -->
+          <div class="space-y-8">
+        {items.map((it) => (
+          <article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200 w-full">
+            <div class="flex flex-col lg:flex-row">
+              <!-- Image Container -->
+              <div class="relative overflow-hidden h-64 lg:h-80 lg:w-1/2">
+                <a href={`/propiedad/${it.id}`} class="block">
+                  <img 
+                    src={firstImg(it.property_images)} 
+                    alt={it.title} 
+                    class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
+                    loading="lazy" 
+                  />
+                </a>
+                <!-- Status Badge -->
+                <div class="absolute top-4 right-4">
+                  <span class="px-3 py-1 rounded-full text-xs font-medium text-white shadow-sm" style="background: var(--primary);">
+                    {it.status === 'venta' ? 'Venta' : 'Alquiler'}
+                  </span>
+                </div>
+                <!-- Favorite Button -->
+                <div class="absolute top-4 left-4">
+                  <FavoriteButton propertyId={it.id} />
+                </div>
+              </div>
+              
+              <!-- Content -->
+              <div class="p-8 lg:w-1/2 flex flex-col justify-between">
+                <div>
+                  <a href={`/propiedad/${it.id}`} class="block hover:opacity-80 transition-opacity duration-200">
+                    <h2 class="text-2xl font-semibold mb-4 hover:text-primary transition-colors duration-200" style="color: var(--text-primary);">
+                      {it.title}
+                    </h2>
+                    
+                    <!-- Location -->
+                    <div class="flex items-center mb-4 text-gray-600">
+                      <svg class="w-5 h-5 mr-2" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                      </svg>
+                      <span class="text-base">{it.address} · {it.city}</span>
+                    </div>
+                    
+                    <!-- Description -->
+                    <p class="text-gray-600 mb-6 leading-relaxed">
+                      {it.description || 'Descripción no disponible'}
+                    </p>
+                    
+                    <!-- Features -->
+                    <div class="flex gap-6 mb-6 text-sm text-gray-600">
+                      <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                        </svg>
+                        <span class="font-medium">{it.rooms} habitaciones</span>
+                      </div>
+                      <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"></path>
+                        </svg>
+                        <span class="font-medium">{it.baths} baños</span>
+                      </div>
+                      <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                        </svg>
+                        <span class="font-medium">{it.area_m2} m²</span>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+                
+                <!-- Price and Actions -->
+                <div class="border-t border-gray-100 pt-6">
+                  <div class="flex items-center justify-between mb-6">
+                    <div>
+                      <span class="text-3xl font-bold" style="color: var(--primary);">
+                        {new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(Number(it.price||0))}
+                      </span>
+                    </div>
+                    <button 
+                      class="p-3 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                      onclick={`toggleFavorite('${it.id}')`}
+                      title="Agregar a favoritos"
+                    >
+                      <svg class="w-6 h-6 text-gray-400 hover:text-red-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <!-- Actions -->
+                  <div class="flex gap-3">
+                    <a href={`/propiedad/${it.id}`} class="flex-1 px-6 py-3 rounded-lg text-base font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 text-center" style="background: var(--primary);">
+                      Ver detalles
+                    </a>
+                    <button 
+                      class="px-6 py-3 rounded-lg text-base font-medium border border-gray-200 hover:bg-gray-50 transition-colors duration-200"
+                      onclick={`showInquiryModal('${it.id}', '${it.title}')`}
+                    >
+                      Consultar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <!-- Empty State -->
+      {items.length === 0 && (
+        <div class="text-center py-16">
+          <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gray-100 flex items-center justify-center">
+            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--text-primary);">No encontramos propiedades</h3>
+          <p class="text-gray-600 mb-6">Intenta ajustar los filtros de búsqueda para encontrar más resultados.</p>
+          <a href="/" class="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200" style="background: var(--primary);">
+            Nueva búsqueda
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </a>
+        </div>
+      )}
+    </main>
+
+    <!-- Modal de consulta - Material Design -->
+    <div id="inquiryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-gray-100">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold" style="color: var(--text-primary);">Consultar sobre esta propiedad</h3>
+            <button 
+              onclick="closeInquiryModal()"
+              class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors duration-200"
+            >
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Modal Body -->
+        <form id="inquiryForm" onsubmit="submitInquiry(event)" class="px-6 py-6">
+          <input type="hidden" id="propertyId" name="property_id" />
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Nombre *</label>
+              <input 
+                type="text" 
+                name="name" 
+                required 
+                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200" 
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Email *</label>
+              <input 
+                type="email" 
+                name="email" 
+                required 
+                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200" 
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Teléfono</label>
+              <input 
+                type="tel" 
+                name="phone" 
+                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200" 
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Mensaje</label>
+              <textarea 
+                name="message" 
+                rows="4" 
+                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 resize-none" 
+                placeholder="Cuéntanos qué te interesa saber sobre esta propiedad..."
+              ></textarea>
+            </div>
+          </div>
+          
+          <!-- Modal Footer -->
+          <div class="flex gap-3 mt-6">
+            <button 
+              type="button" 
+              onclick="closeInquiryModal()" 
+              class="flex-1 py-3 px-4 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors duration-200"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              class="flex-1 py-3 px-4 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200"
+              style="background: var(--primary);"
+            >
+              Enviar consulta
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      let currentPropertyId = '';
+      let currentPropertyTitle = '';
+
+      function showInquiryModal(propertyId: string, propertyTitle: string) {
+        currentPropertyId = propertyId;
+        currentPropertyTitle = propertyTitle;
+        const propertyIdElement = document.getElementById('propertyId') as HTMLInputElement;
+        const inquiryModal = document.getElementById('inquiryModal');
+        if (propertyIdElement && inquiryModal) {
+          propertyIdElement.value = propertyId;
+          inquiryModal.classList.remove('hidden');
+          inquiryModal.classList.add('flex');
+        }
+      }
+
+      function closeInquiryModal() {
+        const inquiryModal = document.getElementById('inquiryModal');
+        const inquiryForm = document.getElementById('inquiryForm') as HTMLFormElement;
+        if (inquiryModal) {
+          inquiryModal.classList.add('hidden');
+          inquiryModal.classList.remove('flex');
+        }
+        if (inquiryForm) {
+          inquiryForm.reset();
+        }
+      }
+
+      async function submitInquiry(event: Event) {
+        event.preventDefault();
+        const form = event.target as HTMLFormElement;
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+          const response = await fetch('/api/inquiry', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+
+          if (response.ok) {
+            alert('¡Consulta enviada correctamente! Te contactaremos pronto.');
+            closeInquiryModal();
+          } else {
+            throw new Error('Error al enviar la consulta');
+          }
+        } catch (error) {
+          alert('Error al enviar la consulta. Inténtalo de nuevo.');
+          console.error(error);
+        }
+      }
+
+      // Cerrar modal al hacer clic fuera
+      const inquiryModal = document.getElementById('inquiryModal');
+      if (inquiryModal) {
+        inquiryModal.addEventListener('click', (e) => {
+          if ((e.target as HTMLElement).id === 'inquiryModal') {
+            closeInquiryModal();
+          }
+        });
+      }
+
+      // Funcionalidad de favoritos
+      function toggleFavorite(propertyId) {
+        alert('Para agregar a favoritos necesitas iniciar sesión. Esta funcionalidad estará disponible próximamente.');
+      }
+    </script>
+  </body>
+</html>

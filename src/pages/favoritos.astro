@@ -1,0 +1,416 @@
+---
+import { supabase } from '../lib/supabase';
+import { protectRoute } from '../lib/auth';
+import FavoriteButton from '../components/FavoriteButton.astro';
+
+// Proteger la ruta - requiere autenticación
+const { user, hasAccess, error } = await protectRoute('viewer');
+
+if (!hasAccess) {
+  return Astro.redirect('/access-denied');
+}
+
+// Obtener favoritos del usuario
+let favorites: any[] = [];
+try {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    const { data, error: favoritesError } = await supabase
+      .from('favorites')
+      .select(`
+        *,
+        property:properties(
+          id,
+          title,
+          description,
+          price,
+          city,
+          address,
+          rooms,
+          baths,
+          area_m2,
+          status,
+          property_images(url, sort_order)
+        )
+      `)
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false });
+
+    if (!favoritesError && data) {
+      favorites = data;
+    }
+  }
+} catch (error) {
+  console.error('Error fetching favorites:', error);
+}
+
+// Función para obtener la primera imagen
+function firstImg(images: any[]): string {
+  if (!images || images.length === 0) return '/placeholder-property.jpg';
+  const sorted = images.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  return sorted[0]?.url || '/placeholder-property.jpg';
+}
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Favoritos - LLAVE</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="generator" content={Astro.generator} />
+  <link rel="stylesheet" href="/src/styles/global.css" />
+</head>
+<body>
+  <div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-100">
+      <div class="max-w-7xl mx-auto px-6 py-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <a href="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity duration-200">
+              <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style="background: var(--primary);">
+                <span class="text-white font-bold text-lg">L</span>
+              </div>
+              <span class="text-xl font-bold" style="color: var(--text-primary);">
+                {(import.meta as any).env.PUBLIC_BRAND_NAME || 'LLAVE'}
+              </span>
+            </a>
+          </div>
+          
+          <div class="flex items-center gap-4">
+            <a href="/resultados" class="text-gray-600 hover:text-primary transition-colors duration-200">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </a>
+            <button 
+              onclick="window.showLoginModal ? window.showLoginModal() : alert('Función de login no disponible')"
+              class="px-4 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200"
+              style="background: var(--primary);"
+            >
+              {user?.full_name || 'Mi Cuenta'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-6 py-8">
+      <!-- Page Header -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-2" style="color: var(--text-primary);">
+          Mis Favoritos
+        </h1>
+        <p class="text-gray-600">
+          Propiedades que has guardado para revisar más tarde
+        </p>
+      </div>
+
+      {favorites.length === 0 ? (
+        <!-- Empty State -->
+        <div class="text-center py-16">
+          <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gray-100 flex items-center justify-center">
+            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--text-primary);">
+            No tienes favoritos aún
+          </h3>
+          <p class="text-gray-600 mb-6">
+            Explora nuestras propiedades y guarda las que más te gusten
+          </p>
+          <a 
+            href="/resultados"
+            class="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200"
+            style="background: var(--primary);"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            Explorar Propiedades
+          </a>
+        </div>
+      ) : (
+        <!-- Favorites Grid -->
+        <div class="space-y-6">
+          {favorites.map((favorite: any) => {
+            const property = favorite.property;
+            if (!property) return null;
+            
+            return (
+              <article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                <div class="flex flex-col lg:flex-row">
+                  <!-- Image Container -->
+                  <div class="relative overflow-hidden h-64 lg:h-80 lg:w-1/2">
+                    <a href={`/propiedad/${property.id}`} class="block">
+                      <img 
+                        src={firstImg(property.property_images)} 
+                        alt={property.title} 
+                        class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
+                        loading="lazy" 
+                      />
+                    </a>
+                    
+                    <!-- Status Badge -->
+                    <div class="absolute top-4 right-4">
+                      <span class="px-3 py-1 rounded-full text-xs font-medium text-white shadow-sm" style="background: var(--primary);">
+                        {property.status === 'venta' ? 'Venta' : 'Alquiler'}
+                      </span>
+                    </div>
+                    
+                    <!-- Favorite Button -->
+                    <div class="absolute top-4 left-4">
+                      <FavoriteButton propertyId={property.id} isFavorite={true} />
+                    </div>
+                  </div>
+                  
+                  <!-- Content -->
+                  <div class="p-8 lg:w-1/2 flex flex-col justify-between">
+                    <div>
+                      <a href={`/propiedad/${property.id}`} class="block hover:opacity-80 transition-opacity duration-200">
+                        <h2 class="text-2xl font-semibold mb-4 hover:text-primary transition-colors duration-200" style="color: var(--text-primary);">
+                          {property.title}
+                        </h2>
+                        
+                        <!-- Location -->
+                        <div class="flex items-center mb-4 text-gray-600">
+                          <svg class="w-5 h-5 mr-2" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                          </svg>
+                          <span class="text-base">{property.address} · {property.city}</span>
+                        </div>
+                        
+                        <!-- Description -->
+                        <p class="text-gray-600 mb-6 leading-relaxed">
+                          {property.description || 'Descripción no disponible'}
+                        </p>
+                        
+                        <!-- Features -->
+                        <div class="flex items-center gap-6 text-sm text-gray-600 mb-6">
+                          {property.rooms && (
+                            <div class="flex items-center gap-1">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"></path>
+                              </svg>
+                              <span>{property.rooms} hab</span>
+                            </div>
+                          )}
+                          {property.baths && (
+                            <div class="flex items-center gap-1">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M10 3h4v4H10V3z"></path>
+                              </svg>
+                              <span>{property.baths} baños</span>
+                            </div>
+                          )}
+                          {property.area_m2 && (
+                            <div class="flex items-center gap-1">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                              </svg>
+                              <span>{property.area_m2} m²</span>
+                            </div>
+                          )}
+                        </div>
+                      </a>
+                    </div>
+                    
+                    <!-- Price and Actions -->
+                    <div class="flex items-center justify-between pt-6 border-t border-gray-100">
+                      <div class="text-2xl font-bold" style="color: var(--primary);">
+                        {new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(Number(property.price||0))}
+                      </div>
+                      
+                      <div class="flex items-center gap-3">
+                        <a 
+                          href={`/propiedad/${property.id}`}
+                          class="px-4 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200"
+                          style="background: var(--primary);"
+                        >
+                          Ver Detalles
+                        </a>
+                        <button 
+                          onclick={`showInquiryModal('${property.id}', '${property.title}')`}
+                          class="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all duration-200"
+                        >
+                          Consultar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  </div>
+
+  <!-- Inquiry Modal -->
+  <div id="inquiryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-gray-100">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold" style="color: var(--text-primary);">Consultar Propiedad</h3>
+          <button
+            onclick="closeInquiryModal()"
+            class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors duration-200"
+          >
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="px-6 py-6">
+        <form id="inquiryForm" onsubmit="submitInquiry(event)" class="space-y-4">
+          <input type="hidden" id="propertyId" name="property_id" />
+          
+          <div>
+            <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Nombre *</label>
+            <input
+              type="text"
+              name="name"
+              required
+              class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+              placeholder="Tu nombre completo"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Email *</label>
+            <input
+              type="email"
+              name="email"
+              required
+              class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+              placeholder="tu@email.com"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Teléfono</label>
+            <input
+              type="tel"
+              name="phone"
+              class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+              placeholder="+34 600 000 000"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Mensaje</label>
+            <textarea
+              name="message"
+              rows="4"
+              class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+              placeholder="Cuéntanos qué te interesa de esta propiedad..."
+            ></textarea>
+          </div>
+
+          <div class="flex items-center gap-3 pt-4">
+            <button
+              type="submit"
+              class="flex-1 py-3 px-4 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200"
+              style="background: var(--primary);"
+            >
+              Enviar Consulta
+            </button>
+            <button
+              type="button"
+              onclick="closeInquiryModal()"
+              class="px-4 py-3 rounded-lg text-sm font-medium border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all duration-200"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentPropertyId = '';
+    let currentPropertyTitle = '';
+
+    function showInquiryModal(propertyId: string, propertyTitle: string) {
+      currentPropertyId = propertyId;
+      currentPropertyTitle = propertyTitle;
+      const propertyIdElement = document.getElementById('propertyId') as HTMLInputElement;
+      const inquiryModal = document.getElementById('inquiryModal');
+      if (propertyIdElement && inquiryModal) {
+        propertyIdElement.value = propertyId;
+        inquiryModal.classList.remove('hidden');
+        inquiryModal.classList.add('flex');
+      }
+    }
+
+    function closeInquiryModal() {
+      const inquiryModal = document.getElementById('inquiryModal');
+      const inquiryForm = document.getElementById('inquiryForm') as HTMLFormElement;
+      if (inquiryModal) {
+        inquiryModal.classList.add('hidden');
+        inquiryModal.classList.remove('flex');
+      }
+      if (inquiryForm) {
+        inquiryForm.reset();
+      }
+    }
+
+    async function submitInquiry(event: Event) {
+      event.preventDefault();
+      const form = event.target as HTMLFormElement;
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+
+      try {
+        const response = await fetch('/api/inquiry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+          alert('¡Consulta enviada correctamente! Te contactaremos pronto.');
+          closeInquiryModal();
+        } else {
+          throw new Error('Error al enviar la consulta');
+        }
+      } catch (error) {
+        alert('Error al enviar la consulta. Inténtalo de nuevo.');
+        console.error(error);
+      }
+    }
+
+    // Cerrar modal al hacer clic fuera
+    const inquiryModal = document.getElementById('inquiryModal');
+    if (inquiryModal) {
+      inquiryModal.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).id === 'inquiryModal') {
+          closeInquiryModal();
+        }
+      });
+    }
+
+    // Callback para cuando se elimina un favorito
+    (window as any).onFavoriteToggle = (propertyId: string, isFavorite: boolean) => {
+      if (!isFavorite) {
+        // Si se eliminó de favoritos, recargar la página para actualizar la lista
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+---
+import AdminApp from '../../ui/AdminApp.jsx';
+import { protectRoute } from '../../lib/auth';
+
+// Proteger la ruta - solo administradores pueden acceder
+const { user, hasAccess, error } = await protectRoute('admin');
+
+if (!hasAccess) {
+  // Redirigir a página de acceso denegado
+  return Astro.redirect('/access-denied');
+}
+
+const brand = (import.meta as any).env.PUBLIC_BRAND_NAME || 'LLAVE';
+---
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Panel de Administración · {brand}</title>
+    <link rel="stylesheet" href="/src/styles/global.css" />
+  </head>
+  <body class="min-h-screen" style={`background:${import.meta.env.PUBLIC_BRAND_COLOR||'#E2905C'}`}>
+    <div id="root"><AdminApp client:load /></div>
+  </body>
+</html>

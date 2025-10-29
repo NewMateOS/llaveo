@@ -1,0 +1,20 @@
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
+RUN if [ -f package-lock.json ]; then npm ci;     elif [ -f pnpm-lock.yaml ]; then npm i -g pnpm && pnpm i --frozen-lockfile;     elif [ -f yarn.lock ]; then npm i -g yarn && yarn install --frozen-lockfile;     else npm i; fi
+COPY . .
+ARG PUBLIC_SUPABASE_URL
+ARG PUBLIC_SUPABASE_ANON_KEY
+ARG PUBLIC_BRAND_COLOR
+ARG PUBLIC_BRAND_NAME
+ARG PUBLIC_ALLOWED_GOOGLE_DOMAIN
+ENV PUBLIC_SUPABASE_URL=$PUBLIC_SUPABASE_URL     PUBLIC_SUPABASE_ANON_KEY=$PUBLIC_SUPABASE_ANON_KEY     PUBLIC_BRAND_COLOR=$PUBLIC_BRAND_COLOR     PUBLIC_BRAND_NAME=$PUBLIC_BRAND_NAME     PUBLIC_ALLOWED_GOOGLE_DOMAIN=$PUBLIC_ALLOWED_GOOGLE_DOMAIN
+RUN npm run build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+COPY --from=build /app/package.json .
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+EXPOSE 4321
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "4321"]

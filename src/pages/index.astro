@@ -1,0 +1,657 @@
+---
+import SearchBar from '../components/SearchBar.astro';
+import AuthModal from '../components/AuthModal.astro';
+
+const q = Astro.url.searchParams.get('q') ?? '';
+const brand = (import.meta as any).env.PUBLIC_BRAND_NAME || 'LLAVE';
+const authSuccess = Astro.url.searchParams.get('success');
+const authError = Astro.url.searchParams.get('error');
+
+// Obtener propiedades destacadas
+let featuredProperties: any[] = [];
+try {
+  const response = await fetch(`${Astro.url.origin}/api/featured`);
+  if (response.ok) {
+    const data = await response.json();
+    featuredProperties = data.properties || [];
+  }
+} catch (error) {
+  console.error('Error fetching featured properties:', error);
+  // Datos de prueba si no hay conexión a la base de datos
+  featuredProperties = [
+    {
+      id: '1',
+      title: 'Apartamento en el centro de Madrid',
+      description: 'Hermoso apartamento en el corazón de Madrid con vistas espectaculares',
+      price: 350000,
+      city: 'Madrid',
+      address: 'Calle Gran Vía, 123',
+      rooms: 3,
+      baths: 2,
+      area_m2: 85,
+      status: 'venta',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      property_images: [
+        { url: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop', sort_order: 0 }
+      ]
+    },
+    {
+      id: '2',
+      title: 'Casa con jardín en Barcelona',
+      description: 'Casa familiar con jardín privado en zona residencial',
+      price: 450000,
+      city: 'Barcelona',
+      address: 'Carrer de la Pau, 45',
+      rooms: 4,
+      baths: 3,
+      area_m2: 120,
+      status: 'venta',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      property_images: [
+        { url: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&h=600&fit=crop', sort_order: 0 }
+      ]
+    },
+    {
+      id: '3',
+      title: 'Piso moderno en Valencia',
+      description: 'Piso completamente reformado con acabados de lujo',
+      price: 280000,
+      city: 'Valencia',
+      address: 'Avenida del Puerto, 78',
+      rooms: 2,
+      baths: 2,
+      area_m2: 75,
+      status: 'venta',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      property_images: [
+        { url: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop', sort_order: 0 }
+      ]
+    },
+    {
+      id: '4',
+      title: 'Ático con terraza en Sevilla',
+      description: 'Ático exclusivo con terraza privada y vistas panorámicas',
+      price: 320000,
+      city: 'Sevilla',
+      address: 'Calle Sierpes, 89',
+      rooms: 3,
+      baths: 2,
+      area_m2: 95,
+      status: 'venta',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      property_images: [
+        { url: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop', sort_order: 0 }
+      ]
+    },
+    {
+      id: '5',
+      title: 'Casa adosada en Bilbao',
+      description: 'Casa adosada con garaje y trastero en zona tranquila',
+      price: 380000,
+      city: 'Bilbao',
+      address: 'Calle Iparraguirre, 156',
+      rooms: 4,
+      baths: 3,
+      area_m2: 110,
+      status: 'venta',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      property_images: [
+        { url: 'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&h=600&fit=crop', sort_order: 0 }
+      ]
+    },
+    {
+      id: '6',
+      title: 'Estudio en Málaga',
+      description: 'Estudio moderno en el centro histórico de Málaga',
+      price: 180000,
+      city: 'Málaga',
+      address: 'Calle Larios, 23',
+      rooms: 1,
+      baths: 1,
+      area_m2: 45,
+      status: 'venta',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      property_images: [
+        { url: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop', sort_order: 0 }
+      ]
+    }
+  ];
+}
+
+function firstImg(arr) { 
+  if (!arr || !arr.length) return ''; 
+  return arr.sort((a,b)=>(a.sort_order??0)-(b.sort_order??0))[0].url;
+}
+---
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{brand} · Gestión Inmobiliaria</title>
+    <link rel="stylesheet" href="/src/styles/global.css" />
+    <style>
+      :root {
+        --primary: #EB9561;
+        --primary-light: #F2B085;
+        --primary-dark: #D17A3F;
+        --secondary: #2D3748;
+        --accent: #F7FAFC;
+        --text-primary: #1A202C;
+        --text-secondary: #4A5568;
+        --text-muted: #718096;
+        --surface: #FFFFFF;
+        --surface-elevated: #F7FAFC;
+        --border: #E2E8F0;
+        --shadow: rgba(235, 149, 97, 0.1);
+        --shadow-lg: rgba(235, 149, 97, 0.15);
+      }
+      
+      .gradient-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      }
+      
+      .gradient-text {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      
+      .glass-effect {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      
+      .card-hover {
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      .card-hover:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 25px 50px -12px var(--shadow-lg);
+      }
+      
+      .btn-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -5px var(--shadow-lg);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen" style="background: linear-gradient(135deg, #F7FAFC 0%, #EDF2F7 100%);">
+    <!-- Header - Material Design App Bar -->
+    <header class="bg-white sticky top-0 z-50 shadow-sm border-b border-gray-100">
+      <div class="max-w-7xl mx-auto px-6 py-4">
+        <div class="flex justify-between items-center">
+          <!-- Logo Section -->
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+              <span class="text-white font-bold text-lg">L</span>
+            </div>
+            <div class="text-2xl font-bold" style="color: var(--text-primary);">{brand}</div>
+          </div>
+          
+          <!-- Navigation -->
+          <nav class="hidden md:flex gap-1">
+            <a href="/resultados" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
+              Propiedades
+            </a>
+            <a href="/favoritos" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
+              Favoritos
+            </a>
+            <a href="#servicios" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
+              Servicios
+            </a>
+            <a href="#contacto" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
+              Contacto
+            </a>
+            <button onclick="showLoginModal()" class="ml-2 px-6 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+              Login
+            </button>
+          </nav>
+          
+          <!-- Mobile Menu Button -->
+          <button class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+            <svg class="w-6 h-6" style="color: var(--text-secondary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero Section - Material Design -->
+    <section class="relative bg-white py-20">
+      <!-- Background Pattern -->
+      <div class="absolute inset-0 opacity-5">
+        <div class="absolute inset-0" style="background-image: radial-gradient(circle at 1px 1px, var(--primary) 1px, transparent 0); background-size: 20px 20px;"></div>
+      </div>
+      
+      <div class="relative max-w-7xl mx-auto px-6 text-center">
+        <!-- Badge -->
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 mb-8">
+          <div class="w-2 h-2 rounded-full" style="background: var(--primary);"></div>
+          <span class="text-sm font-medium" style="color: var(--text-secondary);">Tu hogar perfecto te espera</span>
+        </div>
+        
+        <!-- Main Heading -->
+        <h1 class="text-5xl md:text-6xl font-bold mb-6 leading-tight" style="color: var(--text-primary);">
+          Encuentra tu<br>
+          <span style="color: var(--primary);">hogar ideal</span>
+        </h1>
+        
+        <!-- Subtitle -->
+        <p class="text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
+          Descubre las mejores propiedades con nuestra plataforma inteligente.<br>
+          <span class="font-medium" style="color: var(--text-primary);">Navegación fácil, información completa y asesoramiento profesional.</span>
+        </p>
+        
+        <!-- Search Bar -->
+        <div class="max-w-7xl mx-auto mb-16">
+        <SearchBar value={q} />
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+            <div class="text-3xl font-bold mb-2" style="color: var(--primary);">500+</div>
+            <div class="text-sm font-medium text-gray-600">Propiedades disponibles</div>
+          </div>
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+            <div class="text-3xl font-bold mb-2" style="color: var(--primary);">50+</div>
+            <div class="text-sm font-medium text-gray-600">Ciudades</div>
+          </div>
+          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+            <div class="text-3xl font-bold mb-2" style="color: var(--primary);">1000+</div>
+            <div class="text-sm font-medium text-gray-600">Clientes satisfechos</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Featured Properties - Material Design -->
+    {featuredProperties.length > 0 && (
+      <section id="propiedades" class="py-32 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-6">
+          <!-- Section Header -->
+          <div class="text-center mb-20">
+            <div class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white shadow-sm mb-8">
+              <div class="w-3 h-3 rounded-full" style="background: var(--primary);"></div>
+              <span class="text-base font-medium" style="color: var(--text-secondary);">Propiedades Destacadas</span>
+            </div>
+            <h2 class="text-5xl md:text-6xl font-bold mb-6" style="color: var(--text-primary);">Las mejores oportunidades</h2>
+            <p class="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+              Descubre las propiedades más exclusivas y mejor valoradas de nuestro catálogo
+            </p>
+          </div>
+          
+          <!-- Properties Grid -->
+          <div class="space-y-8">
+            {featuredProperties.map((property) => (
+              <article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200 w-full">
+                <div class="flex flex-col lg:flex-row">
+                  <!-- Image Container -->
+                  <div class="relative overflow-hidden h-96 lg:h-[500px] lg:w-1/2">
+                    <img 
+                      src={firstImg(property.property_images)} 
+                      alt={property.title} 
+                      class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                    <!-- Status Badge -->
+                    <div class="absolute top-6 right-6">
+                      <span class="px-4 py-2 rounded-full text-sm font-medium text-white shadow-sm" style="background: var(--primary);">
+                        {property.status === 'venta' ? 'Venta' : 'Alquiler'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <!-- Content -->
+                  <div class="p-12 lg:w-1/2 flex flex-col justify-between">
+                    <div>
+                      <a href={`/propiedad/${property.id}`} class="block hover:opacity-80 transition-opacity duration-200">
+                        <h3 class="text-3xl lg:text-4xl font-semibold mb-6 hover:text-primary transition-colors duration-200" style="color: var(--text-primary);">
+                          {property.title}
+                        </h3>
+                        
+                        <!-- Location -->
+                        <div class="flex items-center mb-6 text-gray-600">
+                          <svg class="w-6 h-6 mr-3" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                          </svg>
+                          <span class="text-lg">{property.address} · {property.city}</span>
+                        </div>
+                        
+                        <!-- Description -->
+                        <p class="text-lg text-gray-600 mb-8 leading-relaxed">
+                          {property.description}
+                        </p>
+                        
+                        <!-- Features -->
+                        <div class="flex gap-8 mb-8 text-base text-gray-600">
+                          <div class="flex items-center">
+                            <svg class="w-6 h-6 mr-3" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                            </svg>
+                            <span class="font-medium">{property.rooms} habitaciones</span>
+                          </div>
+                          <div class="flex items-center">
+                            <svg class="w-6 h-6 mr-3" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"></path>
+                            </svg>
+                            <span class="font-medium">{property.baths} baños</span>
+                          </div>
+                          <div class="flex items-center">
+                            <svg class="w-6 h-6 mr-3" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                            </svg>
+                            <span class="font-medium">{property.area_m2} m²</span>
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                    
+                    <!-- Price and Actions -->
+                    <div class="border-t border-gray-100 pt-8">
+                      <div class="flex items-center justify-between mb-8">
+                        <div>
+                          <span class="text-4xl lg:text-5xl font-bold" style="color: var(--primary);">
+                            {new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(Number(property.price||0))}
+                          </span>
+                          <div class="text-lg text-gray-500 mt-2">
+                            {property.status === 'venta' ? 'Precio de venta' : 'Precio mensual'}
+                          </div>
+                        </div>
+                        <button class="p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                          <svg class="w-8 h-8 text-gray-400 hover:text-red-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                          </svg>
+                        </button>
+                      </div>
+                      
+                      <!-- Actions -->
+                      <div class="flex gap-4">
+                        <a href={`/propiedad/${property.id}`} class="flex-1 px-8 py-4 rounded-lg text-lg font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 text-center" style="background: var(--primary);">
+                          Ver detalles
+                        </a>
+                        <button class="px-8 py-4 rounded-lg text-lg font-medium border border-gray-200 hover:bg-gray-50 transition-colors duration-200" style="color: var(--text-primary);">
+                          Consultar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+          
+          <!-- CTA -->
+          <div class="text-center mt-16">
+            <a href="/resultados" class="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200" style="background: var(--primary);">
+              Ver todas las propiedades
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- Services Section - Material Design -->
+    <section id="servicios" class="py-24 bg-gray-50">
+      <div class="max-w-7xl mx-auto px-6">
+        <!-- Section Header - Material Design Typography -->
+        <div class="text-center mb-20">
+          <div class="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white shadow-sm mb-8 border border-gray-100">
+            <div class="w-3 h-3 rounded-full shadow-sm" style="background: var(--primary);"></div>
+            <span class="text-sm font-medium tracking-wide uppercase" style="color: var(--text-secondary);">Nuestros Servicios</span>
+          </div>
+          <h2 class="text-4xl md:text-5xl font-bold mb-6 leading-tight" style="color: var(--text-primary);">
+            Todo lo que necesitas
+          </h2>
+          <p class="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            Ofrecemos servicios completos para hacer realidad tu proyecto inmobiliario con la máxima calidad y profesionalidad
+          </p>
+        </div>
+        
+        <!-- Services Grid - Material Design Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <!-- Service 1 - Material Design Card -->
+          <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+            <!-- Icon Container - Material Design FAB -->
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold mb-4 leading-tight" style="color: var(--text-primary);">Búsqueda Avanzada</h3>
+            <p class="text-gray-600 leading-relaxed">
+              Filtros inteligentes y búsqueda por ubicación para encontrar exactamente lo que buscas
+            </p>
+          </div>
+          
+          <!-- Service 2 - Material Design Card -->
+          <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+            <!-- Icon Container - Material Design FAB -->
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold mb-4 leading-tight" style="color: var(--text-primary);">Información Completa</h3>
+            <p class="text-gray-600 leading-relaxed">
+              Detalles exhaustivos, fotos de alta calidad y datos precisos de cada propiedad
+            </p>
+          </div>
+          
+          <!-- Service 3 - Material Design Card -->
+          <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+            <!-- Icon Container - Material Design FAB -->
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold mb-4 leading-tight" style="color: var(--text-primary);">Consultas Directas</h3>
+            <p class="text-gray-600 leading-relaxed">
+              Contacta directamente con propietarios y recibe respuestas rápidas
+            </p>
+          </div>
+          
+          <!-- Service 4 - Material Design Card -->
+          <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+            <!-- Icon Container - Material Design FAB -->
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold mb-4 leading-tight" style="color: var(--text-primary);">Actualizaciones</h3>
+            <p class="text-gray-600 leading-relaxed">
+              Nuevas propiedades agregadas constantemente para mantenerte al día
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section - Material Design -->
+    <section class="py-32 bg-gray-50">
+      <div class="max-w-7xl mx-auto px-6 text-center">
+        <div class="max-w-4xl mx-auto">
+          <!-- Badge -->
+          <div class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white shadow-sm mb-8">
+            <div class="w-3 h-3 rounded-full" style="background: var(--primary);"></div>
+            <span class="text-base font-medium" style="color: var(--text-secondary);">Tu hogar perfecto te espera</span>
+          </div>
+          
+          <h2 class="text-5xl md:text-6xl font-bold mb-6" style="color: var(--text-primary);">
+            ¿Listo para encontrar<br>
+            <span style="color: var(--primary);">tu hogar ideal</span>?
+          </h2>
+          
+          <p class="text-xl text-gray-600 mb-12 leading-relaxed">
+            Únete a miles de personas que ya encontraron su propiedad perfecta con nosotros.<br>
+            <span class="font-medium" style="color: var(--text-primary);">¡Tu nueva casa está a solo un clic de distancia!</span>
+          </p>
+          
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="/resultados" class="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-lg font-medium text-white shadow-sm hover:shadow-md transition-all duration-200" style="background: var(--primary);">
+              Buscar Propiedades
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+              </svg>
+            </a>
+            <a href="#contacto" class="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-lg font-medium border border-gray-300 hover:bg-gray-50 transition-all duration-200" style="color: var(--text-primary);">
+              Contactar
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer - Material Design -->
+    <footer id="contacto" class="py-16 bg-white border-t border-gray-100">
+      <div class="max-w-7xl mx-auto px-6">
+        <!-- Main Footer Content -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+          <!-- Brand -->
+          <div class="md:col-span-2">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style="background: var(--primary);">
+                <span class="text-white font-bold text-lg">L</span>
+              </div>
+              <div class="text-2xl font-bold" style="color: var(--text-primary);">{brand}</div>
+            </div>
+            <p class="text-gray-600 mb-6 leading-relaxed max-w-md">
+              Tu plataforma inmobiliaria de confianza. Encuentra, compara y contacta con las mejores propiedades de manera fácil y segura.
+            </p>
+            <div class="flex gap-3">
+              <a href="#" class="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors duration-200">
+                <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
+                </svg>
+              </a>
+              <a href="#" class="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors duration-200">
+                <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.2-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21a4.22 4.22 0 0 1-1.93.07 4.28 4.28 0 0 0 4 2.98 8.521 8.521 0 0 1-5.33 1.84c-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21 16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+          
+          <!-- Quick Links -->
+          <div>
+            <h3 class="text-sm font-semibold mb-4 uppercase tracking-wide" style="color: var(--text-primary);">Enlaces</h3>
+            <ul class="space-y-3">
+              <li><a href="/resultados" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200">Todas las propiedades</a></li>
+              <li><a href="/admin" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200">Panel de administración</a></li>
+              <li><a href="#servicios" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200">Servicios</a></li>
+              <li><a href="#propiedades" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200">Propiedades destacadas</a></li>
+            </ul>
+          </div>
+          
+          <!-- Contact Info -->
+          <div>
+            <h3 class="text-sm font-semibold mb-4 uppercase tracking-wide" style="color: var(--text-primary);">Contacto</h3>
+            <div class="space-y-4">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100">
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-sm font-medium" style="color: var(--text-primary);">Email</div>
+                  <div class="text-sm text-gray-600">info@{brand.toLowerCase()}.com</div>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100">
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-sm font-medium" style="color: var(--text-primary);">Teléfono</div>
+                  <div class="text-sm text-gray-600">+34 900 123 456</div>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100">
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-sm font-medium" style="color: var(--text-primary);">Horario</div>
+                  <div class="text-sm text-gray-600">Lun-Vie 9:00-18:00</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Bottom Bar -->
+        <div class="pt-8 border-t border-gray-100">
+          <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="text-sm text-gray-600">
+              © 2024 {brand}. Todos los derechos reservados.
+            </div>
+            <div class="flex gap-6">
+              <a href="#" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200">Política de Privacidad</a>
+              <a href="#" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200">Términos de Uso</a>
+              <a href="#" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200">Cookies</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Auth Modal Component -->
+    <AuthModal />
+
+    <script is:inline>
+      // Manejar mensajes de autenticación
+      const urlParams = new URLSearchParams(window.location.search);
+      const authSuccess = urlParams.get('success');
+      const authError = urlParams.get('error');
+
+      if (authSuccess === 'login') {
+        // Mostrar mensaje de éxito
+        setTimeout(() => {
+          alert('¡Login exitoso! Bienvenido.');
+          // Limpiar URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }, 100);
+      }
+
+      if (authError) {
+        // Mostrar mensaje de error
+        setTimeout(() => {
+          alert('Error en la autenticación: ' + decodeURIComponent(authError));
+          // Limpiar URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }, 100);
+      }
+    </script>
+  </body>
+</html>

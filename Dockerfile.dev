@@ -1,0 +1,19 @@
+FROM node:20-alpine
+WORKDIR /app
+
+RUN apk add --no-cache python3 make g++ git
+ENV CI=true
+ENV HUSKY=0
+ENV CHOKIDAR_USEPOLLING=true
+
+# Solo package.json para que cachee la capa de deps
+COPY package.json ./
+
+# Instala deps “vivas” (sin lock). --no-audit/--no-fund = builds más rápidos
+RUN npm install --no-audit --no-fund
+
+# Copia el resto del código
+COPY . .
+
+EXPOSE 4321
+CMD [ "npm", "run", "dev", "--", "--host", "0.0.0.0" ]

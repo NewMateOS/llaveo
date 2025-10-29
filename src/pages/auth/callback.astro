@@ -1,0 +1,72 @@
+---
+// Página de callback para OAuth
+import { supabase } from '../lib/supabase';
+
+// Obtener parámetros de la URL
+const url = new URL(Astro.request.url);
+const code = url.searchParams.get('code');
+const error = url.searchParams.get('error');
+const redirectTo = url.searchParams.get('redirect') || '/';
+
+if (error) {
+  // Si hay un error, redirigir a la página principal con mensaje de error
+  return Astro.redirect('/?error=' + encodeURIComponent(error));
+}
+
+if (code) {
+  // Intercambiar código por sesión
+  const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+  
+  if (exchangeError) {
+    console.error('Error exchanging code for session:', exchangeError);
+    return Astro.redirect('/?error=' + encodeURIComponent('Error en la autenticación'));
+  }
+  
+  if (data.session) {
+    // Crear perfil de usuario si no existe
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', data.session.user.id)
+      .single();
+    
+    if (profileError && profileError.code === 'PGRST116') {
+      // Perfil no existe, crear uno
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          id: data.session.user.id,
+          full_name: data.session.user.user_metadata?.full_name || data.session.user.email,
+          avatar_url: data.session.user.user_metadata?.avatar_url,
+          role: 'viewer'
+        });
+      
+      if (insertError) {
+        console.error('Error creating profile:', insertError);
+      }
+    }
+  }
+}
+
+// Redirigir a la página solicitada o a la principal
+return Astro.redirect(redirectTo + '?success=login');
+---
+
+<html>
+  <head>
+    <title>Procesando autenticación...</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <div class="min-h-screen flex items-center justify-center bg-gray-50">
+      <div class="text-center">
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+          <span class="text-white font-bold text-2xl">L</span>
+        </div>
+        <h1 class="text-xl font-semibold text-gray-900 mb-2">Procesando autenticación...</h1>
+        <p class="text-gray-600">Por favor espera mientras completamos tu login.</p>
+      </div>
+    </div>
+  </body>
+</html>
