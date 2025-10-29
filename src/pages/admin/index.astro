@@ -2,24 +2,136 @@
 import AdminApp from '../../ui/AdminApp.jsx';
 import { protectRoute } from '../../lib/auth';
 
-// Proteger la ruta - solo administradores pueden acceder
-const { user, hasAccess, error } = await protectRoute(Astro.cookies, 'admin');
+// Asegurar que esta página se renderice en el servidor (no prerenderizada)
+export const prerender = false;
 
-if (!hasAccess) {
-  // Redirigir a página de acceso denegado
-  return Astro.redirect('/access-denied');
+// Verificar si hay un parámetro de sincronización
+const url = new URL(Astro.request.url);
+const needsSync = url.searchParams.get('sync') === 'true';
+
+// Si no necesita sincronización, verificar acceso normalmente
+if (!needsSync) {
+  const { user, hasAccess, error } = await protectRoute(Astro.cookies, 'admin');
+
+  // Logging para debugging
+  console.log('🔐 [Admin] Verificación de acceso:', {
+    hasUser: !!user,
+    userEmail: user?.email || 'N/A',
+    userRole: user?.role || 'N/A',
+    hasAccess,
+    error: error || 'N/A',
+    userId: user?.id || 'N/A'
+  });
+
+  if (!hasAccess) {
+    // Si no hay acceso pero hay sesión en el cliente, mostrar página de sincronización
+    // De lo contrario, redirigir a acceso denegado
+    // Por ahora, redirigir a acceso denegado
+    console.log('❌ [Admin] Acceso denegado, redirigiendo a /access-denied');
+    return Astro.redirect('/access-denied');
+  }
 }
 
 const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
 ---
-<html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Panel de Administración · {brand}</title>
-    <link rel="stylesheet" href="/src/styles/global.css" />
-  </head>
-  <body class="min-h-screen" style={`background:${import.meta.env.PUBLIC_BRAND_COLOR||'#E2905C'}`}>
-    <div id="root"><AdminApp client:load /></div>
-  </body>
-</html>
+{needsSync ? (
+  // Página intermedia para sincronizar sesión
+  <html lang="es">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>Sincronizando sesión...</title>
+    </head>
+    <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: system-ui;">
+      <div style="text-align: center;">
+        <p>Sincronizando sesión...</p>
+      </div>
+      <script>
+        import { getSupabaseClient } from '../../lib/supabase-client';
+        
+        const supabase = getSupabaseClient();
+        
+        async function syncAndRedirect() {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (session?.access_token && session?.refresh_token) {
+              console.log('🔄 [Admin] Sincronizando sesión con servidor...');
+              
+              const response = await fetch('/api/auth/session', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                  session: {
+                    access_token: session.access_token,
+                    refresh_token: session.refresh_token,
+                  },
+                }),
+              });
+              
+              if (response.ok) {
+                console.log('✅ [Admin] Sesión sincronizada, redirigiendo...');
+                // Redirigir a /admin sin el parámetro sync
+                window.location.href = '/admin';
+              } else {
+                console.error('❌ [Admin] Error al sincronizar sesión:', await response.text());
+                window.location.href = '/access-denied';
+              }
+            } else {
+              console.log('⚠️ [Admin] No hay sesión en el cliente');
+              window.location.href = '/access-denied';
+            }
+          } catch (error) {
+            console.error('❌ [Admin] Error en syncAndRedirect:', error);
+            window.location.href = '/access-denied';
+          }
+        }
+        
+        syncAndRedirect();
+      </script>
+    </body>
+  </html>
+) : (
+  // Página normal del admin
+  <html lang="es">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>Panel de Administración · {brand}</title>
+      <link rel="stylesheet" href="/src/styles/global.css" />
+    </head>
+    <body class="min-h-screen" style={`background:${import.meta.env.PUBLIC_BRAND_COLOR||'#E2905C'}`}>
+      <div id="root"><AdminApp client:load /></div>
+      <script>
+        // Verificar si hay sesión en el cliente pero no se sincronizó
+        import { getSupabaseClient } from '../../lib/supabase-client';
+        
+        const supabase = getSupabaseClient();
+        
+        (async () => {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            console.log('🔍 [Admin] Sesión encontrada en cliente, verificando sincronización...');
+            // Intentar sincronizar en segundo plano
+            const response = await fetch('/api/auth/session', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({
+                session: {
+                  access_token: session.access_token,
+                  refresh_token: session.refresh_token,
+                },
+              }),
+            });
+            
+            if (!response.ok) {
+              console.warn('⚠️ [Admin] No se pudo sincronizar sesión en segundo plano');
+            }
+          }
+        })();
+      </script>
+    </body>
+  </html>
+)}

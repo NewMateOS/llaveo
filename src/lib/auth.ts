@@ -23,11 +23,21 @@ export async function getCurrentUser(cookies?: AstroCookies): Promise<AuthResult
     const client = cookies ? getSupabaseServerClient(cookies) : supabase;
     const { data: { session }, error: sessionError } = await client.auth.getSession();
     
+    console.log('🔍 [Auth] getCurrentUser:', {
+      hasCookies: !!cookies,
+      hasSession: !!session,
+      sessionError: sessionError?.message || 'N/A',
+      userId: session?.user?.id || 'N/A',
+      userEmail: session?.user?.email || 'N/A'
+    });
+    
     if (sessionError) {
+      console.error('❌ [Auth] Error de sesión:', sessionError);
       return { user: null, error: 'Error de sesión: ' + sessionError.message };
     }
     
     if (!session?.user) {
+      console.log('⚠️ [Auth] No hay sesión activa');
       return { user: null, error: 'No hay sesión activa' };
     }
 
@@ -38,7 +48,15 @@ export async function getCurrentUser(cookies?: AstroCookies): Promise<AuthResult
       .eq('id', session.user.id)
       .single();
 
+    console.log('📋 [Auth] Perfil obtenido:', {
+      hasProfile: !!profile,
+      profileError: profileError?.message || 'N/A',
+      profileRole: profile?.role || 'N/A',
+      profileId: profile?.id || 'N/A'
+    });
+
     if (profileError) {
+      console.error('❌ [Auth] Error al obtener perfil:', profileError);
       return { user: null, error: 'Error al obtener perfil: ' + profileError.message };
     }
 
@@ -50,8 +68,15 @@ export async function getCurrentUser(cookies?: AstroCookies): Promise<AuthResult
       role: profile.role || 'viewer'
     };
 
+    console.log('✅ [Auth] Usuario obtenido:', {
+      id: user.id,
+      email: user.email,
+      role: user.role
+    });
+
     return { user, error: null };
   } catch (error) {
+    console.error('❌ [Auth] Error inesperado:', error);
     return { user: null, error: 'Error inesperado: ' + (error as Error).message };
   }
 }

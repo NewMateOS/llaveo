@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { getSupabaseServerClient } from '../../../lib/supabase-server';
 
+export const prerender = false;
+
 type SessionPayload = {
   session?: {
     access_token?: string;

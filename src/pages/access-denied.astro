@@ -238,7 +238,42 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
         (window as any).hydrateSupabaseSession = () => hydrateClientFromServerSession(supabase);
       }
 
-      hydrateClientFromServerSession(supabase);
+      // Verificar si hay sesión en el cliente pero acceso denegado
+      // Esto puede indicar que la sesión no está sincronizada con el servidor
+      (async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          console.log('🔄 [AccessDenied] Sesión encontrada en cliente, intentando sincronizar...');
+          
+          // Intentar sincronizar con el servidor
+          try {
+            const response = await fetch('/api/auth/session', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({
+                session: {
+                  access_token: session.access_token,
+                  refresh_token: session.refresh_token,
+                },
+              }),
+            });
+            
+            if (response.ok) {
+              console.log('✅ [AccessDenied] Sesión sincronizada, redirigiendo a /admin?sync=true');
+              // Redirigir a /admin con sync=true para que vuelva a verificar
+              window.location.href = '/admin?sync=true';
+            } else {
+              console.error('❌ [AccessDenied] Error al sincronizar sesión:', await response.text());
+            }
+          } catch (error) {
+            console.error('❌ [AccessDenied] Error:', error);
+          }
+        }
+        
+        // También hidratar del servidor al cliente
+        hydrateClientFromServerSession(supabase);
+      })();
       // DOM elements
       const authModal = document.getElementById('auth-modal');
       const authForm = document.getElementById('auth-form');
