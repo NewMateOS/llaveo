@@ -2,27 +2,42 @@
 // Página de callback para OAuth
 import { supabase } from '../../lib/supabase';
 
+// Headers para prevenir caché
+Astro.setHeaders({
+  'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+  'X-Content-Type-Options': 'nosniff'
+});
+
 // Obtener parámetros de la URL
 const url = new URL(Astro.request.url);
 const code = url.searchParams.get('code');
 const error = url.searchParams.get('error');
 const redirectTo = url.searchParams.get('redirect') || '/';
 
+// Timestamp único para evitar caché
+const timestamp = Date.now();
+
 if (error) {
   // Si hay un error, redirigir a la página principal con mensaje de error
-  return Astro.redirect('/?error=' + encodeURIComponent(error));
+  return Astro.redirect(`/?error=${encodeURIComponent(error)}&_t=${timestamp}`);
 }
 
 if (code) {
+  console.log('🔄 [Callback] Intercambiando código por sesión...');
+  
   // Intercambiar código por sesión
   const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
   
   if (exchangeError) {
-    console.error('Error exchanging code for session:', exchangeError);
-    return Astro.redirect('/?error=' + encodeURIComponent('Error en la autenticación'));
+    console.error('❌ [Callback] Error exchanging code for session:', exchangeError);
+    return Astro.redirect(`/?error=${encodeURIComponent('Error en la autenticación')}&_t=${timestamp}`);
   }
   
   if (data.session) {
+    console.log('✅ [Callback] Sesión creada:', data.session.user.email);
+    
     // Crear perfil de usuario si no existe
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
@@ -31,6 +46,7 @@ if (code) {
       .single();
     
     if (profileError && profileError.code === 'PGRST116') {
+      console.log('📝 [Callback] Creando perfil de usuario...');
       // Perfil no existe, crear uno
       const { error: insertError } = await supabase
         .from('profiles')
@@ -42,14 +58,19 @@ if (code) {
         });
       
       if (insertError) {
-        console.error('Error creating profile:', insertError);
+        console.error('❌ [Callback] Error creating profile:', insertError);
+      } else {
+        console.log('✅ [Callback] Perfil creado exitosamente');
       }
+    } else if (profile) {
+      console.log('✅ [Callback] Perfil encontrado:', profile.full_name);
     }
   }
 }
 
-// Redirigir a la página solicitada o a la principal
-return Astro.redirect(redirectTo + '?success=login');
+// Redirigir a la página solicitada o a la principal con timestamp para evitar caché
+console.log('🔄 [Callback] Redirigiendo a:', redirectTo);
+return Astro.redirect(`${redirectTo}?success=login&_t=${timestamp}`);
 ---
 
 <html>

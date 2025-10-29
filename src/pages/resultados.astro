@@ -77,7 +77,7 @@ function firstImg(arr) {
   if (!arr || !arr.length) return ''; 
   return arr.sort((a,b)=>(a.sort_order??0)-(b.sort_order??0))[0].url;
 }
-const brand = (import.meta as any).env.PUBLIC_BRAND_NAME || 'LLAVE';
+const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
 ---
 <html lang="es">
   <head>

@@ -4,7 +4,7 @@ import AuthModal from '../components/AuthModal.astro';
 import '../styles/global.css';
 
 const q = Astro.url.searchParams.get('q') ?? '';
-const brand = (import.meta as any).env.PUBLIC_BRAND_NAME || 'LLAVE';
+const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
 const authSuccess = Astro.url.searchParams.get('success');
 const authError = Astro.url.searchParams.get('error');
 
@@ -652,16 +652,44 @@ function firstImg(arr) {
 
       // Función para actualizar la UI según el estado de autenticación
       async function updateUserUI(forceRefresh = false) {
+        console.log('🎨 [Index] updateUserUI llamado', { forceRefresh });
+        
         try {
           // Si forceRefresh, esperar un momento para que la sesión se sincronice
           if (forceRefresh) {
+            console.log('⏳ [Index] Esperando sincronización de sesión...');
             await new Promise(resolve => setTimeout(resolve, 500));
           }
           
-          const { data: { session }, error } = await supabase.auth.getSession();
+          // Intentar obtener la sesión con reintentos en producción
+          let session = null;
+          let error = null;
           
-          if (error) {
-            console.error('Error getting session:', error);
+          console.log('🔍 [Index] Obteniendo sesión...');
+          for (let attempt = 0; attempt < 3; attempt++) {
+            console.log(`   Intento ${attempt + 1}/3...`);
+            const result = await supabase.auth.getSession();
+            session = result.data?.session || null;
+            error = result.error;
+            
+            if (session || !error) {
+              console.log(`✅ [Index] Sesión obtenida en intento ${attempt + 1}`, {
+                hasSession: !!session,
+                userEmail: session?.user?.email || 'N/A'
+              });
+              break;
+            }
+            
+            // Esperar antes del siguiente intento
+            if (attempt < 2) {
+              await new Promise(resolve => setTimeout(resolve, 300));
+            }
+          }
+          
+          if (error && !session) {
+            console.error('❌ [Index] Error getting session después de reintentos:', error);
+          } else if (!session) {
+            console.log('ℹ️ [Index] No hay sesión activa');
           }
           
           const loginBtn = document.getElementById('login-btn');
@@ -712,6 +740,9 @@ function firstImg(arr) {
           window.location.href = '/';
         }
       };
+
+      // Exponer updateUserUI globalmente para que AuthModal pueda llamarla
+      (window as any).updateUserUI = updateUserUI;
 
       // Bandera para evitar múltiples actualizaciones
       let isUpdating = false;

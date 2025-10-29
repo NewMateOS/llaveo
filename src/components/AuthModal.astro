@@ -165,24 +165,60 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
 
   // Initialize auth
   async function initAuth() {
-    // Check current session
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      currentUser = session.user;
-      updateAuthState();
+    console.log('🔐 [AuthModal] Inicializando autenticación...');
+    
+    try {
+      // Check current session
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('❌ [AuthModal] Error al obtener sesión inicial:', error);
+      } else if (session) {
+        console.log('✅ [AuthModal] Sesión existente encontrada:', session.user.email);
+        currentUser = session.user;
+        updateAuthState();
+      } else {
+        console.log('ℹ️ [AuthModal] No hay sesión activa');
+      }
+    } catch (error) {
+      console.error('❌ [AuthModal] Error en initAuth:', error);
     }
 
     // Listen for auth changes
     supabase.auth.onAuthStateChange((event, session) => {
+      console.log(`🔄 [AuthModal] Auth state changed: ${event}`, {
+        event,
+        hasSession: !!session,
+        userEmail: session?.user?.email || 'N/A',
+        userId: session?.user?.id || 'N/A'
+      });
+      
       currentUser = session?.user || null;
       updateAuthState();
       
       if (event === 'SIGNED_IN') {
+        console.log('✅ [AuthModal] Usuario inició sesión, actualizando UI');
         hideAuthModal();
-        // La UI se actualizará automáticamente desde index.astro
-        // No recargamos para evitar perder el estado
+        // Disparar actualización de UI en index.astro
+        if ((window as any).updateUserUI) {
+          console.log('📡 [AuthModal] Llamando updateUserUI...');
+          (window as any).updateUserUI(true);
+        } else {
+          console.warn('⚠️ [AuthModal] updateUserUI no está disponible en window');
+        }
+      } else if (event === 'SIGNED_OUT') {
+        console.log('👋 [AuthModal] Usuario cerró sesión');
+        if ((window as any).updateUserUI) {
+          (window as any).updateUserUI(true);
+        }
+      } else if (event === 'TOKEN_REFRESHED') {
+        console.log('🔄 [AuthModal] Token refrescado');
+      } else if (event === 'USER_UPDATED') {
+        console.log('👤 [AuthModal] Usuario actualizado');
       }
     });
+    
+    console.log('✅ [AuthModal] Autenticación inicializada, listener configurado');
   }
 
   function updateAuthState() {
@@ -192,7 +228,7 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
 
   function showUserMenu() {
     // TODO: Implement user menu dropdown
-    console.log('Show user menu for:', currentUser);
+    // Implementar menú desplegable de usuario
   }
 
   // Show/hide modal
@@ -274,44 +310,150 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
     const password = formData.get('password') as string;
     const name = formData.get('name') as string;
 
+    // Validar campos básicos
+    if (!email || !email.includes('@')) {
+      showMessage('Por favor ingresa un email válido');
+      return;
+    }
+
+    if (currentMode !== 'forgot-password' && !password) {
+      showMessage('Por favor ingresa tu contraseña');
+      return;
+    }
+
     try {
       if (currentMode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({
+        console.log('🔐 [AuthModal] Iniciando login para:', email);
+        
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password
         });
-        if (error) throw error;
+        if (error) {
+          console.error('❌ [AuthModal] Error en login:', {
+            message: error.message,
+            status: error.status,
+            name: error.name
+          });
+          throw error;
+        }
+        
+        // Verificar que la sesión se creó correctamente
+        if (data.session) {
+          console.log('✅ [AuthModal] Login exitoso, sesión creada:', {
+            email: data.session.user.email,
+            userId: data.session.user.id,
+            expiresAt: new Date(data.session.expires_at! * 1000).toISOString()
+          });
+          
+          // Esperar un momento para que la sesión se persista
+          console.log('⏳ [AuthModal] Esperando persistencia de sesión...');
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          // Verificar nuevamente que la sesión está disponible
+          console.log('🔍 [AuthModal] Verificando sesión persistida...');
+          const { data: { session: verifySession }, error: verifyError } = await supabase.auth.getSession();
+          
+          if (verifyError) {
+            console.error('⚠️ [AuthModal] Error al verificar sesión después del login:', verifyError);
+          }
+          
+          if (verifySession) {
+            console.log('✅ [AuthModal] Sesión verificada y persistida correctamente:', {
+              email: verifySession.user.email,
+              storageKey: 'sb-auth-token',
+              localStorage: typeof window !== 'undefined' && !!window.localStorage
+            });
+            
+            // Disparar manualmente la actualización de UI
+            if ((window as any).updateUserUI) {
+              console.log('📡 [AuthModal] Disparando updateUserUI...');
+              (window as any).updateUserUI(true);
+            } else {
+              console.warn('⚠️ [AuthModal] updateUserUI no disponible, recargando página...');
+              window.location.reload();
+              return;
+            }
+            
+            // Cerrar modal después de que la UI se actualice
+            setTimeout(() => {
+              console.log('✅ [AuthModal] Cerrando modal de autenticación');
+              hideAuthModal();
+            }, 500);
+          } else {
+            console.warn('⚠️ [AuthModal] La sesión no se persistió correctamente, recargando página...');
+            // Agregar timestamp para evitar caché
+            window.location.href = window.location.pathname + '?login=success&_t=' + Date.now();
+          }
+        } else {
+          console.error('❌ [AuthModal] Login exitoso pero no hay sesión en data.session');
+          throw new Error('No se pudo iniciar sesión. Por favor intenta de nuevo.');
+        }
       } else if (currentMode === 'register') {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { full_name: name }
           }
         });
-        if (error) throw error;
-        showMessage('¡Cuenta creada! Revisa tu email para confirmar tu cuenta.', 'success');
+        if (error) {
+          console.error('Error en registro:', error);
+          throw error;
+        }
+        
+        if (data.user) {
+          showMessage('¡Cuenta creada! Revisa tu email para confirmar tu cuenta.', 'success');
+          // Después de 3 segundos, cambiar a modo login
+          setTimeout(() => {
+            showAuthModal('login');
+            showMessage('Ahora puedes iniciar sesión con tu nueva cuenta', 'success');
+          }, 3000);
+        }
       } else if (currentMode === 'forgot-password') {
-        const { error } = await supabase.auth.resetPasswordForEmail(email);
-        if (error) throw error;
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth/callback?mode=recovery`
+        });
+        if (error) {
+          console.error('Error en recuperación de contraseña:', error);
+          throw error;
+        }
         showMessage('¡Email enviado! Revisa tu bandeja de entrada.', 'success');
       }
     } catch (error: any) {
-      showMessage(error?.message || 'Error en la autenticación');
+      console.error('Error completo en autenticación:', error);
+      const errorMessage = error?.message || error?.error_description || 'Error en la autenticación';
+      showMessage(errorMessage);
     }
   }
 
   async function handleGoogleAuth() {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      // Construir URL de callback asegurándonos de incluir el protocolo
+      const redirectUrl = `${window.location.protocol}//${window.location.host}/auth/callback`;
+      console.log('🔐 Iniciando OAuth con redirectTo:', redirectUrl);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
-      if (error) throw error;
+      
+      if (error) {
+        console.error('❌ Error en OAuth:', error);
+        throw error;
+      }
+      
+      // Si OAuth redirige, la función no llegará aquí
+      // Pero si hay algún error de configuración, lo mostraremos
     } catch (error: any) {
-      showMessage(error?.message || 'Error con Google OAuth');
+      console.error('❌ Error completo en OAuth:', error);
+      showMessage(error?.message || 'Error con Google OAuth. Verifica que la URL de callback esté configurada en Supabase.');
     }
   }
 

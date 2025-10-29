@@ -5,6 +5,22 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Headers para prevenir caché en rutas de autenticación
+[[headers]]
+  for = "/auth/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
+    Pragma = "no-cache"
+    Expires = "0"
+    X-Content-Type-Options = "nosniff"
+
+# Headers para páginas que requieren autenticación
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
+    X-Content-Type-Options = "nosniff"
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"

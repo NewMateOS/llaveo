@@ -4,7 +4,7 @@ export const prerender = false;
 import FavoriteButton from '../components/FavoriteButton.astro';
 import '../styles/global.css';
 
-const brand = (import.meta as any).env.PUBLIC_BRAND_NAME || 'LLAVE';
+const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
 
 // Función para obtener la primera imagen
 function firstImg(images: any[]): string {
