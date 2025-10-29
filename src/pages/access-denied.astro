@@ -1,8 +1,10 @@
 ---
-import { supabase } from '../lib/supabase';
+import { getSupabaseServerClient } from '../lib/supabase-server';
+
+const supabaseServer = getSupabaseServerClient(Astro.cookies);
 
 // Verificar si hay una sesión activa
-const { data: { session } } = await supabase.auth.getSession();
+const { data: { session } } = await supabaseServer.auth.getSession();
 const isLoggedIn = !!session?.user;
 
 const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
@@ -227,8 +229,16 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
     </div>
 
     <script>
-      import { supabase } from '../lib/supabase';
+      import { getSupabaseClient } from '../lib/supabase-client';
+      import { hydrateClientFromServerSession } from '../lib/session-sync';
 
+      const supabase = getSupabaseClient();
+
+      if (!(window as any).hydrateSupabaseSession) {
+        (window as any).hydrateSupabaseSession = () => hydrateClientFromServerSession(supabase);
+      }
+
+      hydrateClientFromServerSession(supabase);
       // DOM elements
       const authModal = document.getElementById('auth-modal');
       const authForm = document.getElementById('auth-form');
@@ -260,6 +270,32 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
         authMessage.classList.add('hidden');
       }
 
+      async function syncSessionWithServer(session) {
+        if (!session?.access_token || !session?.refresh_token) {
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+              session: {
+                access_token: session.access_token,
+                refresh_token: session.refresh_token,
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            console.error('No se pudo sincronizar la sesión con el servidor', await response.text());
+          }
+        } catch (error) {
+          console.error('Error al sincronizar sesión con el servidor', error);
+        }
+      }
+
       // Auth handlers
       async function handleEmailAuth(event) {
         event.preventDefault();
@@ -270,12 +306,15 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
         const password = formData.get('password');
 
         try {
-          const { error } = await supabase.auth.signInWithPassword({
+          const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password
           });
           if (error) throw error;
-          
+
+          await syncSessionWithServer(data?.session);
+          await hydrateClientFromServerSession(supabase);
+
           // Redirect to admin after successful login
           window.location.href = '/admin';
         } catch (error) {

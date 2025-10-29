@@ -143,8 +143,13 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
 
 <script>
   import { getSupabaseClient } from '../lib/supabase-client';
+  import { hydrateClientFromServerSession } from '../lib/session-sync';
 
   const supabase = getSupabaseClient();
+
+  if (!(window as any).hydrateSupabaseSession) {
+    (window as any).hydrateSupabaseSession = () => hydrateClientFromServerSession(supabase);
+  }
 
   // Auth state
   let currentMode = 'login';
@@ -168,6 +173,8 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
     console.log('🔐 [AuthModal] Inicializando autenticación...');
     
     try {
+      await hydrateClientFromServerSession(supabase);
+
       // Check current session
       const { data: { session }, error } = await supabase.auth.getSession();
       
@@ -298,6 +305,32 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
     }
   }
 
+  async function syncSessionWithServer(session: { access_token?: string; refresh_token?: string } | null) {
+    if (!session?.access_token || !session?.refresh_token) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ session: {
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        }})
+      });
+
+      if (!response.ok) {
+        console.error('⚠️ [AuthModal] No se pudo sincronizar la sesión con el servidor', await response.text());
+      } else {
+        console.log('✅ [AuthModal] Sesión sincronizada con el servidor');
+      }
+    } catch (error) {
+      console.error('⚠️ [AuthModal] Error al sincronizar sesión con el servidor:', error);
+    }
+  }
+
   // Auth handlers
   async function handleEmailAuth(event: Event) {
     event.preventDefault();
@@ -340,6 +373,7 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
         
         // Verificar que la sesión se creó correctamente
         if (data.session) {
+          await syncSessionWithServer(data.session);
           console.log('✅ [AuthModal] Login exitoso, sesión creada:', {
             email: data.session.user.email,
             userId: data.session.user.id,
@@ -359,6 +393,7 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
           }
           
           if (verifySession) {
+            await syncSessionWithServer(verifySession);
             console.log('✅ [AuthModal] Sesión verificada y persistida correctamente:', {
               email: verifySession.user.email,
               storageKey: 'sb-auth-token',

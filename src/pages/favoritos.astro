@@ -199,11 +199,14 @@ function firstImg(images: any[]): string {
 
   <script>
     import { getSupabaseClient } from '../lib/supabase-client';
+    import { hydrateClientFromServerSession } from '../lib/session-sync';
 
     const supabase = getSupabaseClient();
 
     // Verificar sesión y cargar favoritos
     async function initFavoritos() {
+      await hydrateClientFromServerSession(supabase);
+
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error || !session?.user) {
@@ -332,6 +335,15 @@ function firstImg(images: any[]): string {
     // Función para logout
     (window as any).handleLogout = async function() {
       const { error } = await supabase.auth.signOut();
+      try {
+        await fetch('/api/auth/session', {
+          method: 'DELETE',
+          credentials: 'same-origin'
+        });
+      } catch (apiError) {
+        console.error('Error al limpiar la sesión del servidor:', apiError);
+      }
+
       if (error) {
         console.error('Error al cerrar sesión:', error);
         alert('Error al cerrar sesión');
@@ -409,6 +421,7 @@ function firstImg(images: any[]): string {
     (window as any).onFavoriteToggle = async (propertyId: string, isFavorite: boolean) => {
       if (!isFavorite) {
         // Si se eliminó de favoritos, recargar la lista
+        await hydrateClientFromServerSession(supabase);
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           await loadFavorites(session.user.id);

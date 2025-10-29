@@ -1,4 +1,6 @@
+import type { AstroCookies } from 'astro';
 import { supabase } from './supabase';
+import { getSupabaseServerClient } from './supabase-server';
 
 export interface User {
   id: string;
@@ -16,9 +18,10 @@ export interface AuthResult {
 /**
  * Verifica si el usuario está autenticado y obtiene su información
  */
-export async function getCurrentUser(): Promise<AuthResult> {
+export async function getCurrentUser(cookies?: AstroCookies): Promise<AuthResult> {
   try {
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const client = cookies ? getSupabaseServerClient(cookies) : supabase;
+    const { data: { session }, error: sessionError } = await client.auth.getSession();
     
     if (sessionError) {
       return { user: null, error: 'Error de sesión: ' + sessionError.message };
@@ -29,7 +32,7 @@ export async function getCurrentUser(): Promise<AuthResult> {
     }
 
     // Obtener perfil del usuario
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await client
       .from('profiles')
       .select('*')
       .eq('id', session.user.id)
@@ -85,12 +88,12 @@ export function canManageProperties(user: User | null): boolean {
 /**
  * Middleware para proteger rutas
  */
-export async function protectRoute(requiredRole: 'admin' | 'agent' | 'viewer' = 'viewer'): Promise<{
+export async function protectRoute(cookies: AstroCookies, requiredRole: 'admin' | 'agent' | 'viewer' = 'viewer'): Promise<{
   user: User | null;
   hasAccess: boolean;
   error: string | null;
 }> {
-  const { user, error } = await getCurrentUser();
+  const { user, error } = await getCurrentUser(cookies);
   
   if (error) {
     return { user: null, hasAccess: false, error };
