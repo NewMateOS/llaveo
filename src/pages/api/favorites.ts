@@ -1,5 +1,11 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '../../lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+
+// Importante: marcar como no prerenderizado para que pueda acceder a request.headers
+export const prerender = false;
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
 // GET - Obtener favoritos del usuario
 export const GET: APIRoute = async ({ request }) => {
@@ -15,17 +21,78 @@ export const GET: APIRoute = async ({ request }) => {
 
     const token = authHeader.replace('Bearer ', '');
     
-    // Verificar sesión
+    // Crear cliente y verificar sesión
+    const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Sesión inválida' }), { 
+      console.error('❌ [Favorites API GET] Error verificando usuario:', authError);
+      return new Response(JSON.stringify({ error: 'Sesión inválida: ' + (authError?.message || 'Token inválido') }), { 
         status: 401,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
+    // Crear cliente autenticado para las consultas
+    const authenticatedSupabase = createClient(supabaseUrl!, supabaseAnonKey!, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
+    });
+
+    // Verificar y crear perfil si no existe usando función SQL
+    const { data: existingProfile, error: profileCheckError } = await authenticatedSupabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (!existingProfile && (!profileCheckError || profileCheckError.code === 'PGRST116')) {
+      // Intentar crear perfil usando función SQL (si existe)
+      const { error: createProfileError } = await authenticatedSupabase.rpc('create_user_profile', {
+        user_id: user.id,
+        user_email: user.email || '',
+        user_full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+        user_avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null
+      });
+
+      if (createProfileError) {
+        // Si la función no existe o falla, intentar insert directo
+        const { error: profileError } = await authenticatedSupabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario',
+            avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+            role: 'viewer'
+          });
+
+        if (profileError) {
+          console.error('❌ [Favorites API GET] Error creando perfil:', profileError);
+          // Si sigue fallando, es un problema de políticas RLS
+          return new Response(JSON.stringify({ 
+            error: 'No se pudo crear el perfil. Por favor, ejecuta el SQL en Supabase Dashboard para crear las políticas necesarias.',
+            details: profileError.message 
+          }), { 
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } else {
+          console.log('✅ [Favorites API GET] Perfil creado automáticamente para:', user.id);
+        }
+      } else {
+        console.log('✅ [Favorites API GET] Perfil creado usando función SQL para:', user.id);
+      }
+    }
+
     // Obtener favoritos del usuario con información de propiedades
-    const { data: favorites, error } = await supabase
+    const { data: favorites, error } = await authenticatedSupabase
       .from('favorites')
       .select(`
         *,
@@ -81,13 +148,73 @@ export const POST: APIRoute = async ({ request }) => {
 
     const token = authHeader.replace('Bearer ', '');
     
-    // Verificar sesión
+    // Crear cliente y verificar sesión
+    const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Sesión inválida' }), { 
+      console.error('❌ [Favorites API POST] Error verificando usuario:', authError);
+      return new Response(JSON.stringify({ error: 'Sesión inválida: ' + (authError?.message || 'Token inválido') }), { 
         status: 401,
         headers: { 'Content-Type': 'application/json' }
       });
+    }
+
+    // Crear cliente autenticado para las consultas
+    const authenticatedSupabase = createClient(supabaseUrl!, supabaseAnonKey!, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
+    });
+
+    // Verificar y crear perfil si no existe usando función SQL
+    const { data: existingProfile, error: profileCheckError } = await authenticatedSupabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (!existingProfile && (!profileCheckError || profileCheckError.code === 'PGRST116')) {
+      // Intentar crear perfil usando función SQL (si existe)
+      const { error: createProfileError } = await authenticatedSupabase.rpc('create_user_profile', {
+        user_id: user.id,
+        user_email: user.email || '',
+        user_full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+        user_avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null
+      });
+
+      if (createProfileError) {
+        // Si la función no existe o falla, intentar insert directo
+        const { error: profileError } = await authenticatedSupabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario',
+            avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+            role: 'viewer'
+          });
+
+        if (profileError) {
+          console.error('❌ [Favorites API POST] Error creando perfil:', profileError);
+          return new Response(JSON.stringify({ 
+            error: 'No se pudo crear el perfil. Por favor, ejecuta el SQL en Supabase Dashboard para crear las políticas necesarias.',
+            details: profileError.message 
+          }), { 
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } else {
+          console.log('✅ [Favorites API POST] Perfil creado automáticamente para:', user.id);
+        }
+      } else {
+        console.log('✅ [Favorites API POST] Perfil creado usando función SQL para:', user.id);
+      }
     }
 
     const { property_id, action } = await request.json();
@@ -101,7 +228,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (action === 'add') {
       // Agregar a favoritos
-      const { data, error } = await supabase
+      const { data, error } = await authenticatedSupabase
         .from('favorites')
         .insert({
           user_id: user.id,
@@ -126,7 +253,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     } else if (action === 'remove') {
       // Quitar de favoritos
-      const { error } = await supabase
+      const { error } = await authenticatedSupabase
         .from('favorites')
         .delete()
         .eq('user_id', user.id)
@@ -170,13 +297,73 @@ export const DELETE: APIRoute = async ({ request }) => {
 
     const token = authHeader.replace('Bearer ', '');
     
-    // Verificar sesión
+    // Crear cliente y verificar sesión
+    const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Sesión inválida' }), { 
+      console.error('❌ [Favorites API] Error verificando usuario:', authError);
+      return new Response(JSON.stringify({ error: 'Sesión inválida: ' + (authError?.message || 'Token inválido') }), { 
         status: 401,
         headers: { 'Content-Type': 'application/json' }
       });
+    }
+
+    // Crear cliente autenticado para las consultas
+    const authenticatedSupabase = createClient(supabaseUrl!, supabaseAnonKey!, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
+    });
+
+    // Verificar y crear perfil si no existe usando función SQL
+    const { data: existingProfile, error: profileCheckError } = await authenticatedSupabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (!existingProfile && (!profileCheckError || profileCheckError.code === 'PGRST116')) {
+      // Intentar crear perfil usando función SQL (si existe)
+      const { error: createProfileError } = await authenticatedSupabase.rpc('create_user_profile', {
+        user_id: user.id,
+        user_email: user.email || '',
+        user_full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+        user_avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null
+      });
+
+      if (createProfileError) {
+        // Si la función no existe o falla, intentar insert directo
+        const { error: profileError } = await authenticatedSupabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario',
+            avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+            role: 'viewer'
+          });
+
+        if (profileError) {
+          console.error('❌ [Favorites API DELETE] Error creando perfil:', profileError);
+          return new Response(JSON.stringify({ 
+            error: 'No se pudo crear el perfil. Por favor, ejecuta el SQL en Supabase Dashboard para crear las políticas necesarias.',
+            details: profileError.message 
+          }), { 
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } else {
+          console.log('✅ [Favorites API DELETE] Perfil creado automáticamente para:', user.id);
+        }
+      } else {
+        console.log('✅ [Favorites API DELETE] Perfil creado usando función SQL para:', user.id);
+      }
     }
 
     const url = new URL(request.url);
@@ -189,8 +376,8 @@ export const DELETE: APIRoute = async ({ request }) => {
       });
     }
 
-    // Eliminar favorito
-    const { error } = await supabase
+    // Eliminar favorito usando el cliente autenticado
+    const { error } = await authenticatedSupabase
       .from('favorites')
       .delete()
       .eq('user_id', user.id)

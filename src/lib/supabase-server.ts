@@ -40,7 +40,8 @@ export function getSupabaseServerClient(cookies: AstroCookies): SupabaseClient {
       storageKey: SERVER_STORAGE_KEY,
       autoRefreshToken: false,
       persistSession: true,
-      detectSessionInUrl: false
+      detectSessionInUrl: true, // Detectar código en URL automáticamente
+      flowType: 'pkce' // Usar PKCE para compatibilidad
     }
   });
 }

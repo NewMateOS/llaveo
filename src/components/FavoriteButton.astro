@@ -38,18 +38,25 @@ const { propertyId, isFavorite = false, onToggle } = Astro.props;
 </button>
 
 <script>
-  import { supabase } from '../lib/supabase';
+  import { getSupabaseClient } from '../lib/supabase-client';
 
   // Estado global de favoritos
   let favoritesState = new Map();
 
+  // Obtener cliente de Supabase del navegador (tiene acceso a localStorage)
+  const supabase = getSupabaseClient();
+
   // Función para obtener token de acceso
   async function getAccessToken() {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('❌ [FavoriteButton] Error obteniendo sesión:', error);
+        return null;
+      }
       return session?.access_token || null;
     } catch (error) {
-      console.error('Error obteniendo token:', error);
+      console.error('❌ [FavoriteButton] Error obteniendo token:', error);
       return null;
     }
   }
