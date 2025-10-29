@@ -143,8 +143,13 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
 
 <script>
   import { getSupabaseClient } from '../lib/supabase-client';
+  import { hydrateClientFromServerSession } from '../lib/session-sync';
 
   const supabase = getSupabaseClient();
+
+  if (!(window as any).hydrateSupabaseSession) {
+    (window as any).hydrateSupabaseSession = () => hydrateClientFromServerSession(supabase);
+  }
 
   // Auth state
   let currentMode = 'login';
@@ -168,6 +173,8 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
     console.log('🔐 [AuthModal] Inicializando autenticación...');
     
     try {
+      await hydrateClientFromServerSession(supabase);
+
       // Check current session
       const { data: { session }, error } = await supabase.auth.getSession();
       

@@ -3,6 +3,7 @@ import { Refine } from '@refinedev/core';
 import { Layout } from 'antd';
 import 'antd/dist/reset.css';
 import { supabase } from '../lib/supabase';
+import { hydrateClientFromServerSession } from '../lib/session-sync';
 import { PropertiesList, PropertiesCreate, PropertiesEdit } from './resources/properties';
 import { InquiriesList } from './resources/inquiries';
 
@@ -10,11 +11,27 @@ function AuthGate({ children }) {
   const [ready, setReady] = React.useState(false);
   const [user, setUser] = React.useState(null);
   React.useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null); setReady(true);
+    let active = true;
+
+    const initAuth = async () => {
+      await hydrateClientFromServerSession(supabase);
+      const { data } = await supabase.auth.getSession();
+      if (!active) return;
+      setUser(data.session?.user ?? null);
+      setReady(true);
+    };
+
+    initAuth();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (!active) return;
+      setUser(session?.user ?? null);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
-    return () => sub.subscription.unsubscribe();
+
+    return () => {
+      active = false;
+      listener?.subscription.unsubscribe();
+    };
   }, []);
   if (!ready) return null;
   if (!user) {

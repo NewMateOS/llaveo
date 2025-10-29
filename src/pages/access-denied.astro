@@ -1,8 +1,10 @@
 ---
-import { supabase } from '../lib/supabase';
+import { getSupabaseServerClient } from '../lib/supabase-server';
+
+const supabaseServer = getSupabaseServerClient(Astro.cookies);
 
 // Verificar si hay una sesión activa
-const { data: { session } } = await supabase.auth.getSession();
+const { data: { session } } = await supabaseServer.auth.getSession();
 const isLoggedIn = !!session?.user;
 
 const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
@@ -227,8 +229,16 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
     </div>
 
     <script>
-      import { supabase } from '../lib/supabase';
+      import { getSupabaseClient } from '../lib/supabase-client';
+      import { hydrateClientFromServerSession } from '../lib/session-sync';
 
+      const supabase = getSupabaseClient();
+
+      if (!(window as any).hydrateSupabaseSession) {
+        (window as any).hydrateSupabaseSession = () => hydrateClientFromServerSession(supabase);
+      }
+
+      hydrateClientFromServerSession(supabase);
       // DOM elements
       const authModal = document.getElementById('auth-modal');
       const authForm = document.getElementById('auth-form');
@@ -303,6 +313,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
           if (error) throw error;
 
           await syncSessionWithServer(data?.session);
+          await hydrateClientFromServerSession(supabase);
 
           // Redirect to admin after successful login
           window.location.href = '/admin';

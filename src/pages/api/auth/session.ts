@@ -8,6 +8,49 @@ type SessionPayload = {
   };
 };
 
+export const GET: APIRoute = async ({ cookies }) => {
+  try {
+    const supabase = getSupabaseServerClient(cookies);
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error) {
+      console.error('Error obteniendo sesión del servidor:', error);
+      return new Response(JSON.stringify({ error: 'Unable to read session' }), {
+        status: 500,
+        headers: { 'content-type': 'application/json' }
+      });
+    }
+
+    if (!data.session) {
+      return new Response(JSON.stringify({ session: null }), {
+        status: 200,
+        headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }
+      });
+    }
+
+    const session = data.session;
+
+    return new Response(JSON.stringify({
+      session: {
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        expires_in: session.expires_in,
+        expires_at: session.expires_at,
+        token_type: session.token_type
+      }
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }
+    });
+  } catch (error) {
+    console.error('Unexpected error reading server session:', error);
+    return new Response(JSON.stringify({ error: 'Invalid request' }), {
+      status: 400,
+      headers: { 'content-type': 'application/json' }
+    });
+  }
+};
+
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const payload = (await request.json()) as SessionPayload;

@@ -647,6 +647,7 @@ function firstImg(arr) {
 
     <script>
       import { getSupabaseClient } from '../lib/supabase-client';
+      import { hydrateClientFromServerSession } from '../lib/session-sync';
 
       const supabase = getSupabaseClient();
 
@@ -684,6 +685,11 @@ function firstImg(arr) {
             if (attempt < 2) {
               await new Promise(resolve => setTimeout(resolve, 300));
             }
+          }
+
+          if (!session) {
+            console.log('🔄 [Index] Intentando hidratar sesión desde el servidor...');
+            session = await hydrateClientFromServerSession(supabase);
           }
           
           if (error && !session) {
@@ -750,8 +756,9 @@ function firstImg(arr) {
         }
       };
 
-      // Exponer updateUserUI globalmente para que AuthModal pueda llamarla
+      // Exponer funciones globales para que otros scripts puedan reutilizarlas
       (window as any).updateUserUI = updateUserUI;
+      (window as any).hydrateSupabaseSession = () => hydrateClientFromServerSession(supabase);
 
       // Bandera para evitar múltiples actualizaciones
       let isUpdating = false;
@@ -777,15 +784,20 @@ function firstImg(arr) {
       }
 
       if (authSuccess === 'login') {
-        // Esperar un momento para que la sesión se sincronice después del redirect OAuth
-        setTimeout(() => {
-          if (!isUpdating) {
-            isUpdating = true;
-            updateUserUI(true).finally(() => {
-              setTimeout(() => { isUpdating = false; }, 500);
-            });
-          }
-        }, 300);
+        (async () => {
+          console.log('🔄 [Index] OAuth completado, sincronizando sesión cliente/servidor...');
+          await hydrateClientFromServerSession(supabase);
+
+          // Esperar un momento para que la sesión se sincronice después del redirect OAuth
+          setTimeout(() => {
+            if (!isUpdating) {
+              isUpdating = true;
+              updateUserUI(true).finally(() => {
+                setTimeout(() => { isUpdating = false; }, 500);
+              });
+            }
+          }, 300);
+        })();
       } else {
         // Actualizar UI al cargar la página normalmente
         updateUserUI();
