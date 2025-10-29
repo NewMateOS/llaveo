@@ -10,20 +10,45 @@ function createCookieStorage(cookies: AstroCookies) {
     getItem: async (key: string): Promise<string | null> => {
       if (key !== SERVER_STORAGE_KEY) return null;
       const stored = cookies.get(SERVER_STORAGE_KEY)?.value;
-      return stored ? decodeURIComponent(stored) : null;
+      const decoded = stored ? decodeURIComponent(stored) : null;
+      console.log('🍪 [CookieStorage] getItem:', {
+        key,
+        hasStored: !!stored,
+        valueLength: decoded?.length || 0,
+        valuePreview: decoded ? decoded.substring(0, 50) + '...' : 'null'
+      });
+      return decoded;
     },
     setItem: async (key: string, value: string): Promise<void> => {
       if (key !== SERVER_STORAGE_KEY) return;
+      console.log('🍪 [CookieStorage] setItem:', {
+        key,
+        valueLength: value.length,
+        valuePreview: value.substring(0, 50) + '...'
+      });
+      // Usar sameSite: 'none' en desarrollo puede ayudar, pero 'lax' debería funcionar
+      // Asegurar que secure sea false en desarrollo para localhost
+      const isDev = !import.meta.env.PROD || import.meta.env.DEV;
       cookies.set(SERVER_STORAGE_KEY, encodeURIComponent(value), {
         path: '/',
         httpOnly: true,
-        secure: import.meta.env.PROD,
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7
+        secure: !isDev, // false en desarrollo (localhost), true en producción
+        sameSite: isDev ? 'lax' : 'lax', // 'lax' debería funcionar para same-origin
+        maxAge: 60 * 60 * 24 * 7, // 7 días
+        // Añadir domain explícitamente si es necesario (normalmente no necesario)
+      });
+      // Verificar que se guardó - esto puede no ser necesario pero ayuda con debugging
+      await new Promise(resolve => setTimeout(resolve, 0)); // Pequeño delay para asegurar que se estableció
+      const verify = cookies.get(SERVER_STORAGE_KEY)?.value;
+      console.log('🍪 [CookieStorage] Verificación después de setItem:', {
+        hasCookie: !!verify,
+        cookieLength: verify?.length || 0,
+        isDev
       });
     },
     removeItem: async (key: string): Promise<void> => {
       if (key !== SERVER_STORAGE_KEY) return;
+      console.log('🍪 [CookieStorage] removeItem:', { key });
       cookies.delete(SERVER_STORAGE_KEY, { path: '/' });
     }
   };

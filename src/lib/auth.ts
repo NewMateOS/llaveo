@@ -20,6 +20,15 @@ export interface AuthResult {
  */
 export async function getCurrentUser(cookies?: AstroCookies): Promise<AuthResult> {
   try {
+    // Verificar cookie directamente antes de obtener sesión
+    if (cookies) {
+      const cookieValue = cookies.get('sb-server-auth-token')?.value;
+      console.log('🍪 [Auth] Cookie antes de getSession:', {
+        hasCookie: !!cookieValue,
+        cookieLength: cookieValue?.length || 0
+      });
+    }
+    
     const client = cookies ? getSupabaseServerClient(cookies) : supabase;
     const { data: { session }, error: sessionError } = await client.auth.getSession();
     
