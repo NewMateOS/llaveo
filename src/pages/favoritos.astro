@@ -1,19 +1,19 @@
 ---
 import { supabase } from '../lib/supabase';
-import { protectRoute } from '../lib/auth';
 import FavoriteButton from '../components/FavoriteButton.astro';
 
-// Proteger la ruta - requiere autenticación
-const { user, hasAccess, error } = await protectRoute('viewer');
+// Verificar si hay sesión activa
+const { data: { session } } = await supabase.auth.getSession();
 
-if (!hasAccess) {
-  return Astro.redirect('/access-denied');
+if (!session?.user) {
+  // Si no hay sesión, redirigir al inicio con mensaje para que se loguee
+  return Astro.redirect('/?error=' + encodeURIComponent('Necesitas iniciar sesión para ver tus favoritos'));
 }
 
 // Obtener favoritos del usuario
 let favorites: any[] = [];
+let userName = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario';
 try {
-  const { data: { session } } = await supabase.auth.getSession();
   if (session?.user) {
     const { data, error: favoritesError } = await supabase
       .from('favorites')
@@ -85,13 +85,15 @@ function firstImg(images: any[]): string {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
             </a>
-            <button 
-              onclick="window.showLoginModal ? window.showLoginModal() : alert('Función de login no disponible')"
-              class="px-4 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200"
-              style="background: var(--primary);"
-            >
-              {user?.full_name || 'Mi Cuenta'}
-            </button>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium" style="color: var(--text-primary);">{userName}</span>
+              <button 
+                onclick="handleLogout()"
+                class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+              >
+                Salir
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -340,6 +342,23 @@ function firstImg(images: any[]): string {
   </div>
 
   <script>
+    import { createClient } from '@supabase/supabase-js';
+
+    const supabaseUrl = (import.meta as any).env.PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = (import.meta as any).env.PUBLIC_SUPABASE_ANON_KEY;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    // Función para logout
+    (window as any).handleLogout = async function() {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error al cerrar sesión:', error);
+        alert('Error al cerrar sesión');
+      } else {
+        window.location.href = '/';
+      }
+    };
+
     let currentPropertyId = '';
     let currentPropertyTitle = '';
 
