@@ -1,4 +1,5 @@
 // Cliente singleton de Supabase para el cliente
+// @ts-ignore
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 let supabaseClient: SupabaseClient | null = null;
