@@ -1,48 +1,9 @@
 ---
-import { supabase } from '../lib/supabase';
+export const prerender = false;
+
 import FavoriteButton from '../components/FavoriteButton.astro';
 
-// Verificar si hay sesión activa
-const { data: { session } } = await supabase.auth.getSession();
-
-if (!session?.user) {
-  // Si no hay sesión, redirigir al inicio con mensaje para que se loguee
-  return Astro.redirect('/?error=' + encodeURIComponent('Necesitas iniciar sesión para ver tus favoritos'));
-}
-
-// Obtener favoritos del usuario
-let favorites: any[] = [];
-let userName = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario';
-try {
-  if (session?.user) {
-    const { data, error: favoritesError } = await supabase
-      .from('favorites')
-      .select(`
-        *,
-        property:properties(
-          id,
-          title,
-          description,
-          price,
-          city,
-          address,
-          rooms,
-          baths,
-          area_m2,
-          status,
-          property_images(url, sort_order)
-        )
-      `)
-      .eq('user_id', session.user.id)
-      .order('created_at', { ascending: false });
-
-    if (!favoritesError && data) {
-      favorites = data;
-    }
-  }
-} catch (error) {
-  console.error('Error fetching favorites:', error);
-}
+const brand = (import.meta as any).env.PUBLIC_BRAND_NAME || 'LLAVE';
 
 // Función para obtener la primera imagen
 function firstImg(images: any[]): string {
@@ -74,7 +35,7 @@ function firstImg(images: any[]): string {
                 <span class="text-white font-bold text-lg">L</span>
               </div>
               <span class="text-xl font-bold" style="color: var(--text-primary);">
-                {(import.meta as any).env.PUBLIC_BRAND_NAME || 'LLAVE'}
+                {brand}
               </span>
             </a>
           </div>
@@ -85,11 +46,12 @@ function firstImg(images: any[]): string {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
             </a>
-            <div class="flex items-center gap-2">
-              <span class="text-sm font-medium" style="color: var(--text-primary);">{userName}</span>
+            <div id="user-info-section" class="flex items-center gap-2">
+              <span id="user-name" class="text-sm font-medium hidden" style="color: var(--text-primary);"></span>
               <button 
                 onclick="handleLogout()"
-                class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+                class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors duration-200 hidden"
+                id="logout-btn"
               >
                 Salir
               </button>
@@ -111,147 +73,41 @@ function firstImg(images: any[]): string {
         </p>
       </div>
 
-      {favorites.length === 0 ? (
-        <!-- Empty State -->
-        <div class="text-center py-16">
-          <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gray-100 flex items-center justify-center">
-            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-            </svg>
-          </div>
-          <h3 class="text-xl font-semibold mb-2" style="color: var(--text-primary);">
-            No tienes favoritos aún
-          </h3>
-          <p class="text-gray-600 mb-6">
-            Explora nuestras propiedades y guarda las que más te gusten
-          </p>
-          <a 
-            href="/resultados"
-            class="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200"
-            style="background: var(--primary);"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-            </svg>
-            Explorar Propiedades
-          </a>
+      <!-- Loading State -->
+      <div id="loading-state" class="text-center py-16">
+        <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gray-100 flex items-center justify-center">
+          <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
-      ) : (
-        <!-- Favorites Grid -->
-        <div class="space-y-6">
-          {favorites.map((favorite: any) => {
-            const property = favorite.property;
-            if (!property) return null;
-            
-            return (
-              <article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
-                <div class="flex flex-col lg:flex-row">
-                  <!-- Image Container -->
-                  <div class="relative overflow-hidden h-64 lg:h-80 lg:w-1/2">
-                    <a href={`/propiedad/${property.id}`} class="block">
-                      <img 
-                        src={firstImg(property.property_images)} 
-                        alt={property.title} 
-                        class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
-                        loading="lazy" 
-                      />
-                    </a>
-                    
-                    <!-- Status Badge -->
-                    <div class="absolute top-4 right-4">
-                      <span class="px-3 py-1 rounded-full text-xs font-medium text-white shadow-sm" style="background: var(--primary);">
-                        {property.status === 'venta' ? 'Venta' : 'Alquiler'}
-                      </span>
-                    </div>
-                    
-                    <!-- Favorite Button -->
-                    <div class="absolute top-4 left-4">
-                      <FavoriteButton propertyId={property.id} isFavorite={true} />
-                    </div>
-                  </div>
-                  
-                  <!-- Content -->
-                  <div class="p-8 lg:w-1/2 flex flex-col justify-between">
-                    <div>
-                      <a href={`/propiedad/${property.id}`} class="block hover:opacity-80 transition-opacity duration-200">
-                        <h2 class="text-2xl font-semibold mb-4 hover:text-primary transition-colors duration-200" style="color: var(--text-primary);">
-                          {property.title}
-                        </h2>
-                        
-                        <!-- Location -->
-                        <div class="flex items-center mb-4 text-gray-600">
-                          <svg class="w-5 h-5 mr-2" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                          </svg>
-                          <span class="text-base">{property.address} · {property.city}</span>
-                        </div>
-                        
-                        <!-- Description -->
-                        <p class="text-gray-600 mb-6 leading-relaxed">
-                          {property.description || 'Descripción no disponible'}
-                        </p>
-                        
-                        <!-- Features -->
-                        <div class="flex items-center gap-6 text-sm text-gray-600 mb-6">
-                          {property.rooms && (
-                            <div class="flex items-center gap-1">
-                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"></path>
-                              </svg>
-                              <span>{property.rooms} hab</span>
-                            </div>
-                          )}
-                          {property.baths && (
-                            <div class="flex items-center gap-1">
-                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M10 3h4v4H10V3z"></path>
-                              </svg>
-                              <span>{property.baths} baños</span>
-                            </div>
-                          )}
-                          {property.area_m2 && (
-                            <div class="flex items-center gap-1">
-                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
-                              </svg>
-                              <span>{property.area_m2} m²</span>
-                            </div>
-                          )}
-                        </div>
-                      </a>
-                    </div>
-                    
-                    <!-- Price and Actions -->
-                    <div class="flex items-center justify-between pt-6 border-t border-gray-100">
-                      <div class="text-2xl font-bold" style="color: var(--primary);">
-                        {new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(Number(property.price||0))}
-                      </div>
-                      
-                      <div class="flex items-center gap-3">
-                        <a 
-                          href={`/propiedad/${property.id}`}
-                          class="px-4 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200"
-                          style="background: var(--primary);"
-                        >
-                          Ver Detalles
-                        </a>
-                        <button 
-                          onclick={`showInquiryModal('${property.id}', '${property.title}')`}
-                          class="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all duration-200"
-                        >
-                          Consultar
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+        <p class="text-gray-600">Cargando favoritos...</p>
+      </div>
+
+      <!-- Empty State (hidden by default) -->
+      <div id="empty-state" class="text-center py-16 hidden">
+        <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gray-100 flex items-center justify-center">
+          <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+          </svg>
         </div>
-      )}
+        <h3 class="text-xl font-semibold mb-2" style="color: var(--text-primary);">
+          No tienes favoritos aún
+        </h3>
+        <p class="text-gray-600 mb-6">
+          Explora nuestras propiedades y guarda las que más te gusten
+        </p>
+        <a 
+          href="/resultados"
+          class="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200"
+          style="background: var(--primary);"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          Explorar Propiedades
+        </a>
+      </div>
+
+      <!-- Favorites Container (hidden by default) -->
+      <div id="favorites-container" class="space-y-6 hidden"></div>
     </div>
   </div>
 
@@ -342,11 +198,145 @@ function firstImg(images: any[]): string {
   </div>
 
   <script>
+    // @ts-ignore
     import { createClient } from '@supabase/supabase-js';
 
     const supabaseUrl = (import.meta as any).env.PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = (import.meta as any).env.PUBLIC_SUPABASE_ANON_KEY;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
+
+    // Verificar sesión y cargar favoritos
+    async function initFavoritos() {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error || !session?.user) {
+        // No hay sesión, redirigir
+        window.location.href = '/?error=' + encodeURIComponent('Necesitas iniciar sesión para ver tus favoritos');
+        return;
+      }
+
+      // Mostrar información del usuario
+      const userNameEl = document.getElementById('user-name');
+      const logoutBtn = document.getElementById('logout-btn');
+      const name = session.user.user_metadata?.full_name || 
+                  session.user.user_metadata?.name || 
+                  session.user.email?.split('@')[0] || 
+                  'Usuario';
+      
+      if (userNameEl) {
+        userNameEl.textContent = name;
+        userNameEl.classList.remove('hidden');
+      }
+      if (logoutBtn) {
+        logoutBtn.classList.remove('hidden');
+      }
+
+      // Cargar favoritos
+      await loadFavorites(session.user.id);
+    }
+
+    // Función para cargar favoritos
+    async function loadFavorites(userId: string) {
+      const loadingState = document.getElementById('loading-state');
+      const emptyState = document.getElementById('empty-state');
+      const favoritesContainer = document.getElementById('favorites-container');
+
+      try {
+        const { data, error } = await supabase
+          .from('favorites')
+          .select(`
+            *,
+            property:properties(
+              id,
+              title,
+              description,
+              price,
+              city,
+              address,
+              rooms,
+              baths,
+              area_m2,
+              status,
+              property_images(url, sort_order)
+            )
+          `)
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (loadingState) loadingState.classList.add('hidden');
+
+        if (!data || data.length === 0) {
+          if (emptyState) emptyState.classList.remove('hidden');
+          if (favoritesContainer) favoritesContainer.classList.add('hidden');
+        } else {
+          if (emptyState) emptyState.classList.add('hidden');
+          if (favoritesContainer) {
+            favoritesContainer.classList.remove('hidden');
+            favoritesContainer.innerHTML = data.map((favorite: any) => {
+              const property = favorite.property;
+              if (!property) return '';
+              
+              const firstImg = property.property_images && property.property_images.length > 0
+                ? property.property_images.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))[0].url
+                : '/placeholder-property.jpg';
+
+              return `
+                <article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                  <div class="flex flex-col lg:flex-row">
+                    <div class="relative overflow-hidden h-64 lg:h-80 lg:w-1/2">
+                      <a href="/propiedad/${property.id}" class="block">
+                        <img src="${firstImg}" alt="${property.title}" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" loading="lazy" />
+                      </a>
+                      <div class="absolute top-4 right-4">
+                        <span class="px-3 py-1 rounded-full text-xs font-medium text-white shadow-sm" style="background: var(--primary);">
+                          ${property.status === 'venta' ? 'Venta' : 'Alquiler'}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="p-8 lg:w-1/2 flex flex-col justify-between">
+                      <div>
+                        <a href="/propiedad/${property.id}" class="block hover:opacity-80 transition-opacity duration-200">
+                          <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">${property.title}</h2>
+                          <div class="flex items-center mb-4 text-gray-600">
+                            <svg class="w-5 h-5 mr-2" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            <span class="text-base">${property.address} · ${property.city}</span>
+                          </div>
+                          <p class="text-gray-600 mb-6 leading-relaxed">${property.description || 'Descripción no disponible'}</p>
+                        </a>
+                      </div>
+                      <div class="flex items-center justify-between pt-6 border-t border-gray-100">
+                        <div class="text-2xl font-bold" style="color: var(--primary);">
+                          ${new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(Number(property.price||0))}
+                        </div>
+                        <a href="/propiedad/${property.id}" class="px-4 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200" style="background: var(--primary);">
+                          Ver Detalles
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              `;
+            }).join('');
+          }
+        }
+      } catch (error) {
+        console.error('Error loading favorites:', error);
+        if (loadingState) loadingState.classList.add('hidden');
+        if (emptyState) emptyState.classList.remove('hidden');
+        alert('Error al cargar tus favoritos');
+      }
+    }
 
     // Función para logout
     (window as any).handleLogout = async function() {
@@ -358,6 +348,9 @@ function firstImg(images: any[]): string {
         window.location.href = '/';
       }
     };
+
+    // Inicializar al cargar la página
+    initFavoritos();
 
     let currentPropertyId = '';
     let currentPropertyTitle = '';
@@ -422,12 +415,13 @@ function firstImg(images: any[]): string {
     }
 
     // Callback para cuando se elimina un favorito
-    (window as any).onFavoriteToggle = (propertyId: string, isFavorite: boolean) => {
+    (window as any).onFavoriteToggle = async (propertyId: string, isFavorite: boolean) => {
       if (!isFavorite) {
-        // Si se eliminó de favoritos, recargar la página para actualizar la lista
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
+        // Si se eliminó de favoritos, recargar la lista
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          await loadFavorites(session.user.id);
+        }
       }
     };
   </script>
