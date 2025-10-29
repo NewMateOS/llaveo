@@ -154,7 +154,11 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: true }
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
   });
 
   // Auth state
@@ -190,8 +194,8 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
       
       if (event === 'SIGNED_IN') {
         hideAuthModal();
-        // Recargar la página para actualizar el estado del usuario
-        window.location.reload();
+        // La UI se actualizará automáticamente desde index.astro
+        // No recargamos para evitar perder el estado
       }
     });
   }

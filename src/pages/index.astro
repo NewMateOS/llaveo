@@ -656,42 +656,62 @@ function firstImg(arr) {
         console.error('Supabase credentials not configured');
       }
 
-      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      });
 
       // Función para actualizar la UI según el estado de autenticación
-      async function updateUserUI() {
-        const { data: { session } } = await supabase.auth.getSession();
-        const loginBtn = document.getElementById('login-btn');
-        const userInfo = document.getElementById('user-info');
-        const userName = document.getElementById('user-name');
-        const userAvatar = document.getElementById('user-avatar') as HTMLImageElement | null;
-
-        if (session?.user) {
-          // Usuario logueado - mostrar info del usuario
-          if (loginBtn) loginBtn.classList.add('hidden');
-          if (userInfo) userInfo.classList.remove('hidden');
-          
-          // Obtener nombre del usuario
-          const name = session.user.user_metadata?.full_name || 
-                      session.user.user_metadata?.name || 
-                      session.user.email?.split('@')[0] || 
-                      'Usuario';
-          
-          if (userName) userName.textContent = name;
-          
-          // Obtener avatar
-          const avatar = session.user.user_metadata?.avatar_url || 
-                       session.user.user_metadata?.picture ||
-                       `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=EB9561&color=fff&size=128`;
-          
-          if (userAvatar) {
-            userAvatar.src = avatar;
-            userAvatar.alt = name;
+      async function updateUserUI(forceRefresh = false) {
+        try {
+          // Si forceRefresh, esperar un momento para que la sesión se sincronice
+          if (forceRefresh) {
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
-        } else {
-          // Usuario no logueado - mostrar botón de login
-          if (loginBtn) loginBtn.classList.remove('hidden');
-          if (userInfo) userInfo.classList.add('hidden');
+          
+          const { data: { session }, error } = await supabase.auth.getSession();
+          
+          if (error) {
+            console.error('Error getting session:', error);
+          }
+          
+          const loginBtn = document.getElementById('login-btn');
+          const userInfo = document.getElementById('user-info');
+          const userName = document.getElementById('user-name');
+          const userAvatar = document.getElementById('user-avatar') as HTMLImageElement | null;
+
+          if (session?.user) {
+            // Usuario logueado - mostrar info del usuario
+            if (loginBtn) loginBtn.classList.add('hidden');
+            if (userInfo) userInfo.classList.remove('hidden');
+            
+            // Obtener nombre del usuario
+            const name = session.user.user_metadata?.full_name || 
+                        session.user.user_metadata?.name || 
+                        session.user.email?.split('@')[0] || 
+                        'Usuario';
+            
+            if (userName) userName.textContent = name;
+            
+            // Obtener avatar
+            const avatar = session.user.user_metadata?.avatar_url || 
+                         session.user.user_metadata?.picture ||
+                         `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=EB9561&color=fff&size=128`;
+            
+            if (userAvatar) {
+              userAvatar.src = avatar;
+              userAvatar.alt = name;
+            }
+          } else {
+            // Usuario no logueado - mostrar botón de login
+            if (loginBtn) loginBtn.classList.remove('hidden');
+            if (userInfo) userInfo.classList.add('hidden');
+          }
+        } catch (err) {
+          console.error('Error updating UI:', err);
         }
       }
 
@@ -708,22 +728,25 @@ function firstImg(arr) {
       };
 
       // Escuchar cambios en el estado de autenticación
-      supabase.auth.onAuthStateChange((_event, session) => {
+      supabase.auth.onAuthStateChange((event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         updateUserUI();
       });
 
-      // Actualizar UI al cargar la página
-      updateUserUI();
-
-      // Manejar mensajes de autenticación
+      // Manejar mensajes de autenticación desde URL
       const urlParams = new URLSearchParams(window.location.search);
       const authSuccess = urlParams.get('success');
       const authError = urlParams.get('error');
 
       if (authSuccess === 'login') {
-        // Actualizar UI y limpiar URL
+        // Forzar actualización de UI con refresh después del redirect OAuth
+        updateUserUI(true).then(() => {
+          // Limpiar URL después de actualizar
+          window.history.replaceState({}, document.title, window.location.pathname);
+        });
+      } else {
+        // Actualizar UI al cargar la página normalmente
         updateUserUI();
-        window.history.replaceState({}, document.title, window.location.pathname);
       }
 
       if (authError) {
