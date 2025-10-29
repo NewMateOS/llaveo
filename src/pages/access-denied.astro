@@ -260,9 +260,11 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
             });
             
             if (response.ok) {
-              console.log('✅ [AccessDenied] Sesión sincronizada, redirigiendo a /admin?sync=true');
-              // Redirigir a /admin con sync=true para que vuelva a verificar
-              window.location.href = '/admin?sync=true';
+              console.log('✅ [AccessDenied] Sesión sincronizada, esperando un momento antes de redirigir...');
+              // Esperar un momento más largo para asegurar que la cookie se estableció y el navegador la procesó
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              // Redirigir a /admin con synced=true para indicar que ya se sincronizó
+              window.location.href = '/admin?synced=true';
             } else {
               console.error('❌ [AccessDenied] Error al sincronizar sesión:', await response.text());
             }

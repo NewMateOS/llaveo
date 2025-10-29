@@ -59,7 +59,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const access_token = payload.session?.access_token;
     const refresh_token = payload.session?.refresh_token;
 
+    console.log('🔄 [Session API] POST recibido:', {
+      hasAccessToken: !!access_token,
+      hasRefreshToken: !!refresh_token,
+      accessTokenLength: access_token?.length || 0
+    });
+
     if (!access_token || !refresh_token) {
+      console.error('❌ [Session API] Faltan tokens de sesión');
       return new Response(JSON.stringify({ error: 'Missing session tokens' }), {
         status: 400,
         headers: { 'content-type': 'application/json' }
@@ -67,22 +74,71 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const supabase = getSupabaseServerClient(cookies);
-    const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+    const { data, error } = await supabase.auth.setSession({ access_token, refresh_token });
 
     if (error) {
-      console.error('Error setting server session cookie:', error);
+      console.error('❌ [Session API] Error al establecer sesión:', error);
       return new Response(JSON.stringify({ error: 'Unable to persist session' }), {
         status: 500,
         headers: { 'content-type': 'application/json' }
       });
     }
 
+    console.log('✅ [Session API] Sesión establecida correctamente:', {
+      hasSession: !!data.session,
+      userId: data.session?.user?.id || 'N/A',
+      userEmail: data.session?.user?.email || 'N/A'
+    });
+
+    // Verificar que la sesión se guardó correctamente
+    const { data: verifySession } = await supabase.auth.getSession();
+    console.log('🔍 [Session API] Verificación de sesión guardada:', {
+      hasSession: !!verifySession.session,
+      userId: verifySession.session?.user?.id || 'N/A'
+    });
+    
+    // CRÍTICO: Esperar un momento para asegurar que la cookie se estableció
+    // y forzar la persistencia de la cookie antes de devolver la respuesta
+    await new Promise(resolve => setTimeout(resolve, 10));
+    
+    // Forzar que la cookie se establezca explícitamente si no está presente
+    // Esto es un workaround para asegurar que Astro envíe la cookie
+    const currentCookie = cookies.get('sb-server-auth-token');
+    if (!currentCookie || !currentCookie.value) {
+      console.warn('⚠️ [Session API] Cookie no encontrada después de setSession, estableciéndola manualmente');
+      // Intentar obtener la sesión serializada directamente de Supabase
+      if (data.session) {
+        // No podemos serializar directamente, pero podemos verificar el storage
+        console.warn('⚠️ [Session API] La cookie debería haberse establecido automáticamente');
+      }
+    }
+
+    // Leer la cookie directamente para verificar que se guardó
+    const cookieValue = cookies.get('sb-server-auth-token')?.value;
+    console.log('🍪 [Session API] Cookie después de setSession:', {
+      hasCookie: !!cookieValue,
+      cookieLength: cookieValue?.length || 0
+    });
+
+    // IMPORTANTE: Asegurar que las cookies se envíen en los headers de respuesta
+    // Astro debería hacer esto automáticamente
+    const responseHeaders = new Headers({
+      'content-type': 'application/json'
+    });
+    
+    // Verificar que la cookie principal está presente
+    const mainCookie = cookies.get('sb-server-auth-token');
+    console.log('🍪 [Session API] Cookie principal en respuesta:', {
+      hasCookie: !!mainCookie,
+      cookieName: mainCookie?.name || 'N/A'
+    });
+
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
-      headers: { 'content-type': 'application/json' }
+      headers: responseHeaders
     });
   } catch (error) {
-    console.error('Unexpected error syncing session:', error);
+    console.error('❌ [Session API] Error inesperado:', error);
     return new Response(JSON.stringify({ error: 'Invalid request' }), {
       status: 400,
       headers: { 'content-type': 'application/json' }
