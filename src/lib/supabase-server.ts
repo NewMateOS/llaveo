@@ -9,6 +9,7 @@ function createCookieStorage(cookies: AstroCookies) {
   return {
     getItem: async (key: string): Promise<string | null> => {
       if (key !== SERVER_STORAGE_KEY) return null;
+
       try {
         const stored = cookies.get(SERVER_STORAGE_KEY)?.value;
         if (!stored) return null;

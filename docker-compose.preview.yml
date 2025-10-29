@@ -5,11 +5,31 @@ services:
       context: .
       dockerfile: Dockerfile.prod
       args:
-        PUBLIC_SUPABASE_URL: "${PUBLIC_SUPABASE_URL}"
-        PUBLIC_SUPABASE_ANON_KEY: "${PUBLIC_SUPABASE_ANON_KEY}"
+        PUBLIC_SUPABASE_URL: "${PUBLIC_SUPABASE_URL:-}"
+        PUBLIC_SUPABASE_ANON_KEY: "${PUBLIC_SUPABASE_ANON_KEY:-}"
         PUBLIC_BRAND_COLOR: "${PUBLIC_BRAND_COLOR:-#E2905C}"
         PUBLIC_BRAND_NAME: "${PUBLIC_BRAND_NAME:-LLAVE}"
-        PUBLIC_ALLOWED_GOOGLE_DOMAIN: "${PUBLIC_ALLOWED_GOOGLE_DOMAIN:-tu-dominio.com}"
+        PUBLIC_ALLOWED_GOOGLE_DOMAIN: "${PUBLIC_ALLOWED_GOOGLE_DOMAIN:-}"
+        PUBLIC_APP_URL: "${PUBLIC_APP_URL:-http://localhost:4321}"
     container_name: llave-web-preview
     ports:
       - "4321:4321"
+    environment:
+      - PUBLIC_SUPABASE_URL=${PUBLIC_SUPABASE_URL:-}
+      - PUBLIC_SUPABASE_ANON_KEY=${PUBLIC_SUPABASE_ANON_KEY:-}
+      - PUBLIC_BRAND_COLOR=${PUBLIC_BRAND_COLOR:-#E2905C}
+      - PUBLIC_BRAND_NAME=${PUBLIC_BRAND_NAME:-LLAVE}
+      - PUBLIC_ALLOWED_GOOGLE_DOMAIN=${PUBLIC_ALLOWED_GOOGLE_DOMAIN:-}
+      - PUBLIC_APP_URL=${PUBLIC_APP_URL:-http://localhost:4321}
+      - NODE_ENV=production
+      - USE_DOCKER=true
+      - DOCKER=true
+      - HOST=0.0.0.0
+      - PORT=4321
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4321/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s

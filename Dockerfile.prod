@@ -1,20 +1,85 @@
 FROM node:20-alpine AS build
 WORKDIR /app
-COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
-RUN if [ -f package-lock.json ]; then npm ci;     elif [ -f pnpm-lock.yaml ]; then npm i -g pnpm && pnpm i --frozen-lockfile;     elif [ -f yarn.lock ]; then npm i -g yarn && yarn install --frozen-lockfile;     else npm i; fi
+
+# Instalar dependencias del sistema
+RUN apk add --no-cache python3 make g++ git
+
+# Copiar archivos de dependencias
+COPY package.json package-lock.json* ./
+
+# Instalar todas las dependencias (necesarias para el build)
+RUN npm ci && npm cache clean --force
+
+# Copiar el resto del código
 COPY . .
+
+# Variables de entorno como argumentos de build
 ARG PUBLIC_SUPABASE_URL
 ARG PUBLIC_SUPABASE_ANON_KEY
 ARG PUBLIC_BRAND_COLOR
 ARG PUBLIC_BRAND_NAME
 ARG PUBLIC_ALLOWED_GOOGLE_DOMAIN
-ENV PUBLIC_SUPABASE_URL=$PUBLIC_SUPABASE_URL     PUBLIC_SUPABASE_ANON_KEY=$PUBLIC_SUPABASE_ANON_KEY     PUBLIC_BRAND_COLOR=$PUBLIC_BRAND_COLOR     PUBLIC_BRAND_NAME=$PUBLIC_BRAND_NAME     PUBLIC_ALLOWED_GOOGLE_DOMAIN=$PUBLIC_ALLOWED_GOOGLE_DOMAIN
+ARG PUBLIC_APP_URL
+
+# Establecer variables de entorno para el build
+ENV PUBLIC_SUPABASE_URL=$PUBLIC_SUPABASE_URL \
+    PUBLIC_SUPABASE_ANON_KEY=$PUBLIC_SUPABASE_ANON_KEY \
+    PUBLIC_BRAND_COLOR=$PUBLIC_BRAND_COLOR \
+    PUBLIC_BRAND_NAME=$PUBLIC_BRAND_NAME \
+    PUBLIC_ALLOWED_GOOGLE_DOMAIN=$PUBLIC_ALLOWED_GOOGLE_DOMAIN \
+    PUBLIC_APP_URL=$PUBLIC_APP_URL \
+    NODE_ENV=production \
+    USE_DOCKER=true \
+    DOCKER=true
+
+# Construir la aplicación
 RUN npm run build
 
+# Etapa de producción
 FROM node:20-alpine AS runner
 WORKDIR /app
-COPY --from=build /app/package.json .
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
+
+# Crear usuario no-root para seguridad
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S astro -u 1001
+
+# Copiar solo archivos necesarios
+COPY --from=build --chown=astro:nodejs /app/package.json ./
+COPY --from=build --chown=astro:nodejs /app/node_modules ./node_modules
+COPY --from=build --chown=astro:nodejs /app/dist ./dist
+
+# Instalar wget para health check (antes de cambiar de usuario)
+RUN apk add --no-cache wget
+
+# Variables de entorno de runtime (reexponer ARGs para runtime)
+ARG PUBLIC_SUPABASE_URL
+ARG PUBLIC_SUPABASE_ANON_KEY
+ARG PUBLIC_BRAND_COLOR
+ARG PUBLIC_BRAND_NAME
+ARG PUBLIC_ALLOWED_GOOGLE_DOMAIN
+ARG PUBLIC_APP_URL
+
+ENV NODE_ENV=production \
+    HOST=0.0.0.0 \
+    PORT=4321 \
+    USE_DOCKER=true \
+    DOCKER=true \
+    PUBLIC_SUPABASE_URL=$PUBLIC_SUPABASE_URL \
+    PUBLIC_SUPABASE_ANON_KEY=$PUBLIC_SUPABASE_ANON_KEY \
+    PUBLIC_BRAND_COLOR=$PUBLIC_BRAND_COLOR \
+    PUBLIC_BRAND_NAME=$PUBLIC_BRAND_NAME \
+    PUBLIC_ALLOWED_GOOGLE_DOMAIN=$PUBLIC_ALLOWED_GOOGLE_DOMAIN \
+    PUBLIC_APP_URL=$PUBLIC_APP_URL
+
+# Cambiar a usuario no-root
+USER astro
+
+# Exponer puerto
 EXPOSE 4321
-CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "4321"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:4321/health || exit 1
+
+# Comando para ejecutar la aplicación
+CMD ["node", "dist/server/entry.mjs"]

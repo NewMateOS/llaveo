@@ -303,18 +303,50 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
       return;
     }
 
+    // Validación de email más estricta
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showMessage('Por favor ingresa un email válido');
+      return;
+    }
+
     if (currentMode !== 'forgot-password' && !password) {
       showMessage('Por favor ingresa tu contraseña');
       return;
     }
+
+    // Validación de contraseña para registro
+    if (currentMode === 'register' && password) {
+      if (password.length < 8) {
+        showMessage('La contraseña debe tener al menos 8 caracteres');
+        return;
+      }
+      if (!/[A-Z]/.test(password)) {
+        showMessage('La contraseña debe contener al menos una letra mayúscula');
+        return;
+      }
+      if (!/[a-z]/.test(password)) {
+        showMessage('La contraseña debe contener al menos una letra minúscula');
+        return;
+      }
+      if (!/\d/.test(password)) {
+        showMessage('La contraseña debe contener al menos un número');
+        return;
+      }
+    }
+
+    // Sanitizar entrada
+    const sanitizedEmail = email.trim().toLowerCase();
+    const sanitizedPassword = password?.trim() || '';
+    const sanitizedName = name?.trim() || '';
 
     try {
       if (currentMode === 'login') {
         console.log('🔐 [AuthModal] Iniciando login para:', email);
         
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password
+          email: sanitizedEmail,
+          password: sanitizedPassword
         });
         if (error) {
           console.error('❌ [AuthModal] Error en login:', {
@@ -380,10 +412,10 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
         }
       } else if (currentMode === 'register') {
         const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: sanitizedEmail,
+          password: sanitizedPassword,
           options: {
-            data: { full_name: name }
+            data: { full_name: sanitizedName }
           }
         });
         if (error) {
@@ -400,7 +432,7 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
           }, 3000);
         }
       } else if (currentMode === 'forgot-password') {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
           redirectTo: `${window.location.origin}/auth/callback?mode=recovery`
         });
         if (error) {

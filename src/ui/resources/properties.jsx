@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTable, EditButton, DeleteButton, CreateButton, useForm } from '@refinedev/antd';
+import { useTable, EditButton, DeleteButton, useForm } from '@refinedev/antd';
 import {
   Table,
   Form,
@@ -45,9 +45,14 @@ export const PropertiesList = () => {
   return (
     <div>
       <Space style={{ marginBottom: 16 }}>
-        <CreateButton resource="properties">
+        <Button 
+          type="primary"
+          onClick={() => {
+            window.location.hash = '#/properties/create';
+          }}
+        >
           Crear vivienda
-        </CreateButton>
+        </Button>
       </Space>
       <Table
         rowKey="id"
@@ -67,8 +72,102 @@ export const PropertiesList = () => {
           { title: 'Activa', dataIndex: 'is_active', render: v => v ? 'Sí' : 'No' },
           { title: 'Acciones', dataIndex: 'actions',
             render: (_, r) => (<Space>
-              <EditButton recordItemId={r.id} />
-              <DeleteButton recordItemId={r.id} />
+              <Button 
+                size="small"
+                onClick={() => {
+                  window.location.hash = `#/properties/edit/${r.id}`;
+                }}
+              >
+                Editar
+              </Button>
+              <Popconfirm
+                title="Eliminar propiedad"
+                description="Esta acción no se puede deshacer. ¿Estás seguro?"
+                okText="Eliminar"
+                cancelText="Cancelar"
+                okButtonProps={{ danger: true }}
+                onConfirm={async () => {
+                  try {
+                    const supabase = getSupabaseClient();
+                    
+                    // Obtener las imágenes de la propiedad
+                    const { data: images } = await supabase
+                      .from('property_images')
+                      .select('url')
+                      .eq('property_id', r.id);
+                    
+                    // Eliminar las imágenes del storage
+                    if (images && images.length > 0) {
+                      const bucket = 'properties';
+                      const filePaths = images
+                        .map(img => img.url)
+                        .map(url => {
+                          // Extraer el path del URL de Supabase
+                          // Soporta diferentes formatos de URL de Supabase
+                          const patterns = [
+                            /\/storage\/v1\/object\/public\/properties\/(.+)$/,
+                            /\/properties\/(.+)$/
+                          ];
+                          
+                          for (const pattern of patterns) {
+                            const match = url.match(pattern);
+                            if (match) return match[1];
+                          }
+                          
+                          // Si no coincide con ningún patrón, tomar el último segmento después de '/'
+                          const segments = url.split('/');
+                          return segments[segments.length - 1] || null;
+                        })
+                        .filter(Boolean);
+                      
+                      if (filePaths.length > 0) {
+                        const { error: storageError } = await supabase.storage.from(bucket).remove(filePaths);
+                        if (storageError) {
+                          console.warn('Error eliminando archivos del storage (continuando con la eliminación de BD):', storageError);
+                          // No lanzamos el error, solo lo registramos, ya que los datos ya están eliminados
+                        }
+                      }
+                    }
+                    
+                    // Eliminar las referencias de imágenes en la BD
+                    await supabase
+                      .from('property_images')
+                      .delete()
+                      .eq('property_id', r.id);
+                    
+                    // Eliminar las consultas relacionadas
+                    await supabase
+                      .from('inquiries')
+                      .delete()
+                      .eq('property_id', r.id);
+                    
+                    // Eliminar los favoritos relacionados
+                    await supabase
+                      .from('favorites')
+                      .delete()
+                      .eq('property_id', r.id);
+                    
+                    // Finalmente, eliminar la propiedad
+                    const { error } = await supabase
+                      .from('properties')
+                      .delete()
+                      .eq('id', r.id);
+                    
+                    if (error) throw error;
+                    
+                    message.success('Propiedad eliminada correctamente');
+                    // Recargar la tabla
+                    window.location.reload();
+                  } catch (error) {
+                    console.error('Error eliminando propiedad:', error);
+                    message.error('Error al eliminar la propiedad: ' + (error.message || error));
+                  }
+                }}
+              >
+                <Button size="small" danger>
+                  Eliminar
+                </Button>
+              </Popconfirm>
             </Space>)
           }
         ]}

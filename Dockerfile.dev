@@ -9,8 +9,9 @@ ENV CHOKIDAR_USEPOLLING=true
 # Solo package.json para que cachee la capa de deps
 COPY package.json ./
 
-# Instala deps “vivas” (sin lock). --no-audit/--no-fund = builds más rápidos
-RUN npm install --no-audit --no-fund
+# Instala deps "vivas" (sin lock). --no-audit/--no-fund = builds más rápidos
+# Usar --legacy-peer-deps para resolver conflictos de versiones
+RUN npm install --no-audit --no-fund --legacy-peer-deps
 
 # Copia el resto del código
 COPY . .
