@@ -87,36 +87,51 @@ export default function AdminApp() {
         options={{ syncWithLocation: true }}
         dataProvider={{
           default: {
-            getList: async ({ resource, pagination, sorters, filters, meta }) => {
+            getList: async ({ resource, pagination, sorters }) => {
               let query = supabase.from(resource);
-              
-              // Para consultas, incluir información de la propiedad
-              if (resource === 'inquiries') {
-                query = query.select(`
-                  *,
-                  property:properties(title, id)
-                `);
+
+              if (resource === 'properties') {
+                query = query
+                  .select('*, property_images(id, url, sort_order)', { count: 'exact' })
+                  .order('created_at', { ascending: false });
+              } else if (resource === 'inquiries') {
+                query = query
+                  .select('*, property:properties(title, id)', { count: 'exact' })
+                  .order('created_at', { ascending: false });
+              } else {
+                query = query.select('*', { count: 'exact' });
               }
-              
+
               if (pagination) {
                 const { current = 1, pageSize = 10 } = pagination;
                 query = query.range((current - 1) * pageSize, current * pageSize - 1);
               }
-              
+
               if (sorters && sorters.length > 0) {
                 const sorter = sorters[0];
                 query = query.order(sorter.field, { ascending: sorter.order === 'asc' });
-              } else if (resource === 'inquiries') {
-                query = query.order('created_at', { ascending: false });
               }
-              
-              const { data, error } = await query;
+
+              const { data, error, count } = await query;
               if (error) throw error;
-              
-              return { data, total: data.length };
+
+              return { data: data ?? [], total: typeof count === 'number' ? count : data?.length ?? 0 };
             },
-            getOne: async ({ resource, id, meta }) => {
-              const { data, error } = await supabase.from(resource).select('*').eq('id', id).single();
+            getOne: async ({ resource, id }) => {
+              let query = supabase.from(resource);
+
+              if (resource === 'properties') {
+                query = query.select('*, property_images(id, url, sort_order)').eq('id', id).single();
+              } else if (resource === 'inquiries') {
+                query = query
+                  .select('*, property:properties(title, id)')
+                  .eq('id', id)
+                  .single();
+              } else {
+                query = query.select('*').eq('id', id).single();
+              }
+
+              const { data, error } = await query;
               if (error) throw error;
               return { data };
             },

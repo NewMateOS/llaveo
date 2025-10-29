@@ -10,119 +10,18 @@ const authError = Astro.url.searchParams.get('error');
 
 // Obtener propiedades destacadas
 let featuredProperties: any[] = [];
+let featuredError: string | null = null;
 try {
   const response = await fetch(`${Astro.url.origin}/api/featured`);
   if (response.ok) {
     const data = await response.json();
-    featuredProperties = data.properties || [];
+    featuredProperties = (data.properties || []).filter((property: any) => property?.is_active !== false);
+  } else {
+    featuredError = 'No se pudieron cargar las propiedades destacadas.';
   }
 } catch (error) {
   console.error('Error fetching featured properties:', error);
-  // Datos de prueba si no hay conexión a la base de datos
-  featuredProperties = [
-    {
-      id: '1',
-      title: 'Apartamento en el centro de Madrid',
-      description: 'Hermoso apartamento en el corazón de Madrid con vistas espectaculares',
-      price: 350000,
-      city: 'Madrid',
-      address: 'Calle Gran Vía, 123',
-      rooms: 3,
-      baths: 2,
-      area_m2: 85,
-      status: 'venta',
-      is_active: true,
-      created_at: new Date().toISOString(),
-      property_images: [
-        { url: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop', sort_order: 0 }
-      ]
-    },
-    {
-      id: '2',
-      title: 'Casa con jardín en Barcelona',
-      description: 'Casa familiar con jardín privado en zona residencial',
-      price: 450000,
-      city: 'Barcelona',
-      address: 'Carrer de la Pau, 45',
-      rooms: 4,
-      baths: 3,
-      area_m2: 120,
-      status: 'venta',
-      is_active: true,
-      created_at: new Date().toISOString(),
-      property_images: [
-        { url: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&h=600&fit=crop', sort_order: 0 }
-      ]
-    },
-    {
-      id: '3',
-      title: 'Piso moderno en Valencia',
-      description: 'Piso completamente reformado con acabados de lujo',
-      price: 280000,
-      city: 'Valencia',
-      address: 'Avenida del Puerto, 78',
-      rooms: 2,
-      baths: 2,
-      area_m2: 75,
-      status: 'venta',
-      is_active: true,
-      created_at: new Date().toISOString(),
-      property_images: [
-        { url: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop', sort_order: 0 }
-      ]
-    },
-    {
-      id: '4',
-      title: 'Ático con terraza en Sevilla',
-      description: 'Ático exclusivo con terraza privada y vistas panorámicas',
-      price: 320000,
-      city: 'Sevilla',
-      address: 'Calle Sierpes, 89',
-      rooms: 3,
-      baths: 2,
-      area_m2: 95,
-      status: 'venta',
-      is_active: true,
-      created_at: new Date().toISOString(),
-      property_images: [
-        { url: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop', sort_order: 0 }
-      ]
-    },
-    {
-      id: '5',
-      title: 'Casa adosada en Bilbao',
-      description: 'Casa adosada con garaje y trastero en zona tranquila',
-      price: 380000,
-      city: 'Bilbao',
-      address: 'Calle Iparraguirre, 156',
-      rooms: 4,
-      baths: 3,
-      area_m2: 110,
-      status: 'venta',
-      is_active: true,
-      created_at: new Date().toISOString(),
-      property_images: [
-        { url: 'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&h=600&fit=crop', sort_order: 0 }
-      ]
-    },
-    {
-      id: '6',
-      title: 'Estudio en Málaga',
-      description: 'Estudio moderno en el centro histórico de Málaga',
-      price: 180000,
-      city: 'Málaga',
-      address: 'Calle Larios, 23',
-      rooms: 1,
-      baths: 1,
-      area_m2: 45,
-      status: 'venta',
-      is_active: true,
-      created_at: new Date().toISOString(),
-      property_images: [
-        { url: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop', sort_order: 0 }
-      ]
-    }
-  ];
+  featuredError = 'No se pudieron cargar las propiedades destacadas.';
 }
 
 function firstImg(arr) { 
@@ -297,31 +196,35 @@ function firstImg(arr) {
     </section>
 
     <!-- Featured Properties - Material Design -->
-    {featuredProperties.length > 0 && (
-      <section id="propiedades" class="py-32 bg-gray-50">
-        <div class="max-w-7xl mx-auto px-6">
-          <!-- Section Header -->
-          <div class="text-center mb-20">
-            <div class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white shadow-sm mb-8">
-              <div class="w-3 h-3 rounded-full" style="background: var(--primary);"></div>
-              <span class="text-base font-medium" style="color: var(--text-secondary);">Propiedades Destacadas</span>
-            </div>
-            <h2 class="text-5xl md:text-6xl font-bold mb-6" style="color: var(--text-primary);">Las mejores oportunidades</h2>
-            <p class="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              Descubre las propiedades más exclusivas y mejor valoradas de nuestro catálogo
-            </p>
+    <section id="propiedades" class="py-32 bg-gray-50">
+      <div class="max-w-7xl mx-auto px-6">
+        <!-- Section Header -->
+        <div class="text-center mb-20">
+          <div class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white shadow-sm mb-8">
+            <div class="w-3 h-3 rounded-full" style="background: var(--primary);"></div>
+            <span class="text-base font-medium" style="color: var(--text-secondary);">Propiedades Destacadas</span>
           </div>
-          
-          <!-- Properties Grid -->
+          <h2 class="text-5xl md:text-6xl font-bold mb-6" style="color: var(--text-primary);">Las mejores oportunidades</h2>
+          <p class="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+            Descubre las propiedades más exclusivas y mejor valoradas de nuestro catálogo
+          </p>
+        </div>
+
+        {featuredError ? (
+          <div class="max-w-3xl mx-auto bg-white border border-red-100 text-red-700 rounded-xl p-8 shadow-sm text-center">
+            <h3 class="text-2xl font-semibold mb-3">No pudimos cargar las viviendas</h3>
+            <p class="text-base text-red-600">{featuredError}</p>
+          </div>
+        ) : featuredProperties.length > 0 ? (
           <div class="space-y-8">
             {featuredProperties.map((property) => (
               <article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200 w-full">
                 <div class="flex flex-col lg:flex-row">
                   <!-- Image Container -->
                   <div class="relative overflow-hidden h-96 lg:h-[500px] lg:w-1/2">
-                    <img 
-                      src={firstImg(property.property_images)} 
-                      alt={property.title} 
+                    <img
+                      src={firstImg(property.property_images) || 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=800&h=600&fit=crop'}
+                      alt={property.title}
                       class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                       loading="lazy"
                     />
@@ -332,7 +235,7 @@ function firstImg(arr) {
                       </span>
                     </div>
                   </div>
-                  
+
                   <!-- Content -->
                   <div class="p-12 lg:w-1/2 flex flex-col justify-between">
                     <div>
@@ -340,7 +243,7 @@ function firstImg(arr) {
                         <h3 class="text-3xl lg:text-4xl font-semibold mb-6 hover:text-primary transition-colors duration-200" style="color: var(--text-primary);">
                           {property.title}
                         </h3>
-                        
+
                         <!-- Location -->
                         <div class="flex items-center mb-6 text-gray-600">
                           <svg class="w-6 h-6 mr-3" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -349,62 +252,54 @@ function firstImg(arr) {
                           </svg>
                           <span class="text-lg">{property.address} · {property.city}</span>
                         </div>
-                        
+
                         <!-- Description -->
-                        <p class="text-lg text-gray-600 mb-8 leading-relaxed">
-                          {property.description}
-                        </p>
-                        
+                        {property.description && (
+                          <p class="text-lg text-gray-600 mb-8 leading-relaxed">
+                            {property.description}
+                          </p>
+                        )}
+
                         <!-- Features -->
                         <div class="flex gap-8 mb-8 text-base text-gray-600">
                           <div class="flex items-center">
-                            <svg class="w-6 h-6 mr-3" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
                             </svg>
-                            <span class="font-medium">{property.rooms} habitaciones</span>
+                            <span>{property.rooms ?? '—'} habitaciones</span>
                           </div>
                           <div class="flex items-center">
-                            <svg class="w-6 h-6 mr-3" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"></path>
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 12h.01M14 12h.01M12 14h.01M7 7h10a2 2 0 012 2v7a2 2 0 01-2 2H7a2 2 0 01-2-2V9a2 2 0 012-2z"></path>
                             </svg>
-                            <span class="font-medium">{property.baths} baños</span>
+                            <span>{property.baths ?? '—'} baños</span>
                           </div>
                           <div class="flex items-center">
-                            <svg class="w-6 h-6 mr-3" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h16v16H4z"></path>
                             </svg>
-                            <span class="font-medium">{property.area_m2} m²</span>
+                            <span>{property.area_m2 ?? '—'} m²</span>
                           </div>
                         </div>
                       </a>
                     </div>
-                    
-                    <!-- Price and Actions -->
-                    <div class="border-t border-gray-100 pt-8">
-                      <div class="flex items-center justify-between mb-8">
-                        <div>
-                          <span class="text-4xl lg:text-5xl font-bold" style="color: var(--primary);">
-                            {new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(Number(property.price||0))}
-                          </span>
-                          <div class="text-lg text-gray-500 mt-2">
-                            {property.status === 'venta' ? 'Precio de venta' : 'Precio mensual'}
-                          </div>
+
+                    <!-- Price & CTA -->
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                      <div>
+                        <div class="text-4xl font-bold" style="color: var(--primary);">
+                          {new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(Number(property.price || 0))}
                         </div>
-                        <button class="p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                          <svg class="w-8 h-8 text-gray-400 hover:text-red-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                          </svg>
-                        </button>
+                        <div class="text-sm text-gray-500 mt-1">Actualizado {new Date(property.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
                       </div>
-                      
-                      <!-- Actions -->
-                      <div class="flex gap-4">
-                        <a href={`/propiedad/${property.id}`} class="flex-1 px-8 py-4 rounded-lg text-lg font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 text-center" style="background: var(--primary);">
+
+                      <div class="flex flex-col sm:flex-row gap-4">
+                        <a href={`/propiedad/${property.id}`} class="inline-flex items-center justify-center px-6 py-3 rounded-lg text-base font-semibold text-white shadow-md hover:shadow-lg transition-all duration-200" style="background: var(--primary);">
                           Ver detalles
                         </a>
-                        <button class="px-8 py-4 rounded-lg text-lg font-medium border border-gray-200 hover:bg-gray-50 transition-colors duration-200" style="color: var(--text-primary);">
-                          Consultar
-                        </button>
+                        <a href={`/propiedad/${property.id}#contacto`} class="inline-flex items-center justify-center px-6 py-3 rounded-lg text-base font-semibold border border-gray-200 hover:border-primary hover:text-primary transition-colors duration-200">
+                          Solicitar visita
+                        </a>
                       </div>
                     </div>
                   </div>
@@ -412,20 +307,16 @@ function firstImg(arr) {
               </article>
             ))}
           </div>
-          
-          <!-- CTA -->
-          <div class="text-center mt-16">
-            <a href="/resultados" class="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200" style="background: var(--primary);">
-              Ver todas las propiedades
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-              </svg>
-            </a>
+        ) : (
+          <div class="max-w-4xl mx-auto bg-white border border-gray-100 rounded-xl shadow-sm p-10 text-center">
+            <h3 class="text-3xl font-semibold mb-4" style="color: var(--text-primary);">Pronto habrá viviendas disponibles</h3>
+            <p class="text-lg text-gray-600">
+              En cuanto publiquemos nuevas propiedades las verás aquí mismo. Vuelve a visitarnos o escríbenos si quieres que te avisemos.
+            </p>
           </div>
-        </div>
-      </section>
-    )}
-
+        )}
+      </div>
+    </section>
     <!-- Services Section - Material Design -->
     <section id="servicios" class="py-24 bg-gray-50">
       <div class="max-w-7xl mx-auto px-6">
