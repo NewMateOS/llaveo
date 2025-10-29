@@ -8,7 +8,7 @@ const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
 // GET - Obtener favoritos del usuario
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async ({ request }: { request: Request }) => {
   try {
     // Obtener token de autorización
     const authHeader = request.headers.get('Authorization');
@@ -135,7 +135,7 @@ export const GET: APIRoute = async ({ request }) => {
 };
 
 // POST - Agregar/quitar favorito
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request }: { request: Request }) => {
   try {
     // Obtener token de autorización
     const authHeader = request.headers.get('Authorization');
@@ -284,7 +284,7 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 // DELETE - Eliminar favorito específico
-export const DELETE: APIRoute = async ({ request }) => {
+export const DELETE: APIRoute = async ({ request }: { request: Request }) => {
   try {
     // Obtener token de autorización
     const authHeader = request.headers.get('Authorization');

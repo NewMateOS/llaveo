@@ -38,7 +38,7 @@ const { propertyId, isFavorite = false, onToggle } = Astro.props;
 </button>
 
 <script>
-  import { getSupabaseClient } from '../lib/supabase-client';
+  import { getSupabaseClient } from '../lib/supabase-client.js';
 
   // Estado global de favoritos
   let favoritesState = new Map();

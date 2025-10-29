@@ -19,7 +19,8 @@ export const GET: APIRoute = async ({ request }) => {
       });
     }
 
-    return new Response(JSON.stringify({ properties: data }), { 
+    // Asegurar que siempre devolvemos un array, nunca null o undefined
+    return new Response(JSON.stringify({ properties: data || [] }), { 
       headers: { 'Content-Type': 'application/json' }
     });
 

@@ -9,24 +9,49 @@ const authSuccess = Astro.url.searchParams.get('success');
 const authError = Astro.url.searchParams.get('error');
 
 // Obtener propiedades destacadas
-let featuredProperties: any[] = [];
+interface Property {
+  id: string;
+  title: string;
+  description?: string;
+  price: number;
+  city: string;
+  address?: string;
+  rooms?: number;
+  baths?: number;
+  area_m2?: number;
+  status?: string;
+  created_at?: string;
+  is_active?: boolean;
+  property_images?: Array<{ url: string; sort_order?: number }>;
+}
+
+let featuredProperties: Property[] = [];
 let featuredError: string | null = null;
 try {
   const response = await fetch(`${Astro.url.origin}/api/featured`);
   if (response.ok) {
     const data = await response.json();
-    featuredProperties = (data.properties || []).filter((property: any) => property?.is_active !== false);
+    // Asegurar que solo usamos datos de la base de datos, nunca datos hardcodeados
+    const properties = data.properties || [];
+    featuredProperties = properties.filter((property: Property) => property?.is_active !== false);
+    
+    // Si no hay propiedades después del filtro, asegurar que el array esté vacío
+    if (featuredProperties.length === 0 && properties.length > 0) {
+      featuredProperties = [];
+    }
   } else {
     featuredError = 'No se pudieron cargar las propiedades destacadas.';
   }
 } catch (error) {
   console.error('Error fetching featured properties:', error);
   featuredError = 'No se pudieron cargar las propiedades destacadas.';
+  // Asegurar que el array esté vacío en caso de error
+  featuredProperties = [];
 }
 
-function firstImg(arr) { 
+function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | undefined): string { 
   if (!arr || !arr.length) return ''; 
-  return arr.sort((a,b)=>(a.sort_order??0)-(b.sort_order??0))[0].url;
+  return arr.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0].url;
 }
 ---
 <html lang="es">
@@ -290,7 +315,7 @@ function firstImg(arr) {
                         <div class="text-4xl font-bold" style="color: var(--primary);">
                           {new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(Number(property.price || 0))}
                         </div>
-                        <div class="text-sm text-gray-500 mt-1">Actualizado {new Date(property.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
+                        {property.created_at && <div class="text-sm text-gray-500 mt-1">Actualizado {new Date(property.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}</div>}
                       </div>
 
                       <div class="flex flex-col sm:flex-row gap-4">
@@ -537,57 +562,14 @@ function firstImg(arr) {
     <AuthModal />
 
     <script>
-      import { getSupabaseClient } from '../lib/supabase-client';
-      import { hydrateClientFromServerSession } from '../lib/session-sync';
+      import { getSupabaseClient } from '../lib/supabase-client.js';
 
       const supabase = getSupabaseClient();
 
       // Función para actualizar la UI según el estado de autenticación
-      async function updateUserUI(forceRefresh = false) {
-        console.log('🎨 [Index] updateUserUI llamado', { forceRefresh });
-        
+      async function updateUserUI() {
         try {
-          // Si forceRefresh, esperar un momento para que la sesión se sincronice
-          if (forceRefresh) {
-            console.log('⏳ [Index] Esperando sincronización de sesión...');
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-          
-          // Intentar obtener la sesión con reintentos en producción
-          let session = null;
-          let error = null;
-          
-          console.log('🔍 [Index] Obteniendo sesión...');
-          for (let attempt = 0; attempt < 3; attempt++) {
-            console.log(`   Intento ${attempt + 1}/3...`);
-            const result = await supabase.auth.getSession();
-            session = result.data?.session || null;
-            error = result.error;
-            
-            if (session || !error) {
-              console.log(`✅ [Index] Sesión obtenida en intento ${attempt + 1}`, {
-                hasSession: !!session,
-                userEmail: session?.user?.email || 'N/A'
-              });
-              break;
-            }
-            
-            // Esperar antes del siguiente intento
-            if (attempt < 2) {
-              await new Promise(resolve => setTimeout(resolve, 300));
-            }
-          }
-
-          if (!session) {
-            console.log('🔄 [Index] Intentando hidratar sesión desde el servidor...');
-            session = await hydrateClientFromServerSession(supabase);
-          }
-          
-          if (error && !session) {
-            console.error('❌ [Index] Error getting session después de reintentos:', error);
-          } else if (!session) {
-            console.log('ℹ️ [Index] No hay sesión activa');
-          }
+          const { data: { session } } = await supabase.auth.getSession();
           
           const loginBtn = document.getElementById('login-btn');
           const userInfo = document.getElementById('user-info');
@@ -595,11 +577,9 @@ function firstImg(arr) {
           const userAvatar = document.getElementById('user-avatar') as HTMLImageElement | null;
 
           if (session?.user) {
-            // Usuario logueado - mostrar info del usuario
             if (loginBtn) loginBtn.classList.add('hidden');
             if (userInfo) userInfo.classList.remove('hidden');
             
-            // Obtener nombre del usuario
             const name = session.user.user_metadata?.full_name || 
                         session.user.user_metadata?.name || 
                         session.user.email?.split('@')[0] || 
@@ -607,7 +587,6 @@ function firstImg(arr) {
             
             if (userName) userName.textContent = name;
             
-            // Obtener avatar
             const avatar = session.user.user_metadata?.avatar_url || 
                          session.user.user_metadata?.picture ||
                          `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=EB9561&color=fff&size=128`;
@@ -617,7 +596,6 @@ function firstImg(arr) {
               userAvatar.alt = name;
             }
           } else {
-            // Usuario no logueado - mostrar botón de login
             if (loginBtn) loginBtn.classList.remove('hidden');
             if (userInfo) userInfo.classList.add('hidden');
           }
@@ -628,147 +606,35 @@ function firstImg(arr) {
 
       // Función para logout
       (window as any).handleLogout = async function() {
-        const { error } = await supabase.auth.signOut();
+        await supabase.auth.signOut();
         try {
           await fetch('/api/auth/session', {
             method: 'DELETE',
             credentials: 'same-origin'
           });
         } catch (apiError) {
-          console.error('Error al limpiar la sesión del servidor:', apiError);
+          // Silenciosamente fallar
         }
-
-        if (error) {
-          console.error('Error al cerrar sesión:', error);
-          alert('Error al cerrar sesión');
-        } else {
-          await updateUserUI();
-          window.location.href = '/';
-        }
+        await updateUserUI();
+        window.location.href = '/';
       };
 
-      // Exponer funciones globales para que otros scripts puedan reutilizarlas
+      // Exponer función global
       (window as any).updateUserUI = updateUserUI;
-      (window as any).hydrateSupabaseSession = () => hydrateClientFromServerSession(supabase);
-
-      // Bandera para evitar múltiples actualizaciones
-      let isUpdating = false;
 
       // Escuchar cambios en el estado de autenticación
-      supabase.auth.onAuthStateChange((event, session) => {
-        if (!isUpdating) {
-          isUpdating = true;
-          updateUserUI().finally(() => {
-            setTimeout(() => { isUpdating = false; }, 500);
-          });
-        }
+      supabase.auth.onAuthStateChange(() => {
+        updateUserUI();
       });
 
-      // Manejar mensajes de autenticación desde URL
+      // Limpiar parámetros de URL de autenticación y actualizar UI
       const urlParams = new URLSearchParams(window.location.search);
-      const authSuccess = urlParams.get('success');
-      const authError = urlParams.get('error');
-      const authCode = urlParams.get('code');
-      const authCallback = urlParams.get('auth_callback');
-
-      // Manejar código de OAuth callback (PKCE requiere intercambio en el cliente)
-      // Con detectSessionInUrl: true, Supabase debería manejar esto automáticamente,
-      // pero si falla, intentamos manualmente después de verificar que el code_verifier esté disponible
-      if (authCode && authCallback) {
-        console.log('🔄 [Index] Código OAuth detectado en URL');
-        
-        (async () => {
-          try {
-            // Esperar un momento para que Supabase detecte automáticamente el código
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            // Verificar si Supabase ya procesó el código automáticamente
-            let { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-            
-            if (!sessionData?.session) {
-              console.log('🔄 [Index] Supabase no procesó automáticamente, intentando intercambio manual...');
-              
-              // Intentar intercambio manual (el code_verifier debería estar en localStorage)
-              const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(authCode);
-              
-              if (exchangeError) {
-                console.error('❌ [Index] Error intercambiando código:', exchangeError);
-                
-                // Si el error es que falta el code_verifier, puede ser un problema de almacenamiento
-                if (exchangeError.message.includes('code verifier')) {
-                  console.error('❌ [Index] Error: code_verifier no encontrado. Esto puede ocurrir si:');
-                  console.error('   1. El storage fue limpiado durante el redirect');
-                  console.error('   2. Hay un problema con el dominio/subdominio');
-                  console.error('   3. El código expiró (son válidos por ~10 minutos)');
-                  
-                  alert('Error en la autenticación: El código de verificación no se encuentra. Por favor, intenta iniciar sesión nuevamente.');
-                } else {
-                  alert('Error en la autenticación: ' + exchangeError.message);
-                }
-                
-                // Limpiar URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-                return;
-              }
-              
-              if (data.session) {
-                console.log('✅ [Index] Sesión creada desde código OAuth:', data.session.user.email);
-                sessionData = data;
-              }
-            } else {
-              console.log('✅ [Index] Supabase procesó el código automáticamente:', sessionData.session.user.email);
-            }
-            
-            if (sessionData?.session) {
-              // Limpiar URL de parámetros
-              window.history.replaceState({}, document.title, window.location.pathname);
-              
-              // Actualizar UI
-              if (!isUpdating) {
-                isUpdating = true;
-                await updateUserUI(true);
-                setTimeout(() => { isUpdating = false; }, 500);
-              }
-            }
-          } catch (err) {
-            console.error('❌ [Index] Error inesperado intercambiando código:', err);
-            alert('Error procesando la autenticación');
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
-        })();
-      } else {
-        // Limpiar URL primero para evitar bucles
-        if (authSuccess || authError) {
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }
-
-        if (authSuccess === 'login') {
-          (async () => {
-            console.log('🔄 [Index] OAuth completado, sincronizando sesión cliente/servidor...');
-            await hydrateClientFromServerSession(supabase);
-
-            // Esperar un momento para que la sesión se sincronice después del redirect OAuth
-            setTimeout(() => {
-              if (!isUpdating) {
-                isUpdating = true;
-                updateUserUI(true).finally(() => {
-                  setTimeout(() => { isUpdating = false; }, 500);
-                });
-              }
-            }, 300);
-          })();
-        } else {
-          // Actualizar UI al cargar la página normalmente
-          updateUserUI();
-        }
-
-        if (authError) {
-          // Mostrar mensaje de error
-          setTimeout(() => {
-            alert('Error en la autenticación: ' + decodeURIComponent(authError));
-          }, 100);
-        }
+      if (urlParams.get('success') || urlParams.get('error')) {
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
+
+      // Actualizar UI al cargar la página
+      updateUserUI();
     </script>
   </body>
 </html>

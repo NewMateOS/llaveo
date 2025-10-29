@@ -7,7 +7,7 @@ import '../styles/global.css';
 const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
 
 // Función para obtener la primera imagen
-function firstImg(images: any[]): string {
+function firstImg(images: Array<{ url: string; sort_order?: number }> | null | undefined): string {
   if (!images || images.length === 0) return '/placeholder-property.jpg';
   const sorted = images.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
   return sorted[0]?.url || '/placeholder-property.jpg';
@@ -198,15 +198,11 @@ function firstImg(images: any[]): string {
   </div>
 
   <script>
-    import { getSupabaseClient } from '../lib/supabase-client';
-    import { hydrateClientFromServerSession } from '../lib/session-sync';
-
+    import { getSupabaseClient } from '../lib/supabase-client.js';
     const supabase = getSupabaseClient();
 
     // Verificar sesión y cargar favoritos
     async function initFavoritos() {
-      await hydrateClientFromServerSession(supabase);
-
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error || !session?.user) {
@@ -274,12 +270,28 @@ function firstImg(images: any[]): string {
           if (emptyState) emptyState.classList.add('hidden');
           if (favoritesContainer) {
             favoritesContainer.classList.remove('hidden');
-            favoritesContainer.innerHTML = data.map((favorite: any) => {
+            interface FavoriteWithProperty {
+              property?: {
+                id: string;
+                title: string;
+                description?: string;
+                price: number;
+                city: string;
+                address?: string;
+                rooms?: number;
+                baths?: number;
+                area_m2?: number;
+                status?: string;
+                property_images?: Array<{ url: string; sort_order?: number }>;
+              };
+            }
+            
+            favoritesContainer.innerHTML = data.map((favorite: FavoriteWithProperty) => {
               const property = favorite.property;
               if (!property) return '';
               
-              const firstImg = property.property_images && property.property_images.length > 0
-                ? property.property_images.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))[0].url
+              const firstImgUrl = property.property_images && property.property_images.length > 0
+                ? property.property_images.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))[0].url
                 : '/placeholder-property.jpg';
 
               return `
@@ -287,7 +299,7 @@ function firstImg(images: any[]): string {
                   <div class="flex flex-col lg:flex-row">
                     <div class="relative overflow-hidden h-64 lg:h-80 lg:w-1/2">
                       <a href="/propiedad/${property.id}" class="block">
-                        <img src="${firstImg}" alt="${property.title}" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" loading="lazy" />
+                        <img src="${firstImgUrl}" alt="${property.title}" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" loading="lazy" />
                       </a>
                       <div class="absolute top-4 right-4">
                         <span class="px-3 py-1 rounded-full text-xs font-medium text-white shadow-sm" style="background: var(--primary);">
@@ -421,7 +433,6 @@ function firstImg(images: any[]): string {
     (window as any).onFavoriteToggle = async (propertyId: string, isFavorite: boolean) => {
       if (!isFavorite) {
         // Si se eliminó de favoritos, recargar la lista
-        await hydrateClientFromServerSession(supabase);
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           await loadFavorites(session.user.id);

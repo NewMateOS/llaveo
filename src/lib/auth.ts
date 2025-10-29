@@ -1,5 +1,4 @@
 import type { AstroCookies } from 'astro';
-import { supabase } from './supabase';
 import { getSupabaseServerClient } from './supabase-server';
 
 export interface User {
@@ -20,33 +19,18 @@ export interface AuthResult {
  */
 export async function getCurrentUser(cookies?: AstroCookies): Promise<AuthResult> {
   try {
-    // Verificar cookie directamente antes de obtener sesión
-    if (cookies) {
-      const cookieValue = cookies.get('sb-server-auth-token')?.value;
-      console.log('🍪 [Auth] Cookie antes de getSession:', {
-        hasCookie: !!cookieValue,
-        cookieLength: cookieValue?.length || 0
-      });
+    if (!cookies) {
+      return { user: null, error: 'No se proporcionaron cookies' };
     }
     
-    const client = cookies ? getSupabaseServerClient(cookies) : supabase;
+    const client = getSupabaseServerClient(cookies);
     const { data: { session }, error: sessionError } = await client.auth.getSession();
     
-    console.log('🔍 [Auth] getCurrentUser:', {
-      hasCookies: !!cookies,
-      hasSession: !!session,
-      sessionError: sessionError?.message || 'N/A',
-      userId: session?.user?.id || 'N/A',
-      userEmail: session?.user?.email || 'N/A'
-    });
-    
     if (sessionError) {
-      console.error('❌ [Auth] Error de sesión:', sessionError);
       return { user: null, error: 'Error de sesión: ' + sessionError.message };
     }
     
     if (!session?.user) {
-      console.log('⚠️ [Auth] No hay sesión activa');
       return { user: null, error: 'No hay sesión activa' };
     }
 
@@ -57,15 +41,7 @@ export async function getCurrentUser(cookies?: AstroCookies): Promise<AuthResult
       .eq('id', session.user.id)
       .single();
 
-    console.log('📋 [Auth] Perfil obtenido:', {
-      hasProfile: !!profile,
-      profileError: profileError?.message || 'N/A',
-      profileRole: profile?.role || 'N/A',
-      profileId: profile?.id || 'N/A'
-    });
-
     if (profileError) {
-      console.error('❌ [Auth] Error al obtener perfil:', profileError);
       return { user: null, error: 'Error al obtener perfil: ' + profileError.message };
     }
 
@@ -77,15 +53,9 @@ export async function getCurrentUser(cookies?: AstroCookies): Promise<AuthResult
       role: profile.role || 'viewer'
     };
 
-    console.log('✅ [Auth] Usuario obtenido:', {
-      id: user.id,
-      email: user.email,
-      role: user.role
-    });
-
     return { user, error: null };
   } catch (error) {
-    console.error('❌ [Auth] Error inesperado:', error);
+    console.error('Error inesperado en getCurrentUser:', error);
     return { user: null, error: 'Error inesperado: ' + (error as Error).message };
   }
 }
@@ -122,35 +92,20 @@ export function canManageProperties(user: User | null): boolean {
 /**
  * Middleware para proteger rutas
  */
-export async function protectRoute(cookies: AstroCookies, requiredRole: 'admin' | 'agent' | 'viewer' = 'viewer'): Promise<{
+export async function protectRoute(
+  cookies: AstroCookies, 
+  requiredRole: 'admin' | 'agent' | 'viewer' = 'viewer'
+): Promise<{
   user: User | null;
   hasAccess: boolean;
   error: string | null;
 }> {
   const { user, error } = await getCurrentUser(cookies);
   
-  if (error) {
-    return { user: null, hasAccess: false, error };
-  }
-  
-  if (!user) {
-    return { user: null, hasAccess: false, error: 'Usuario no autenticado' };
+  if (error || !user) {
+    return { user: null, hasAccess: false, error: error || 'Usuario no autenticado' };
   }
   
   const hasAccess = hasRole(user, requiredRole);
-  
   return { user, hasAccess, error: hasAccess ? null : 'Acceso denegado: rol insuficiente' };
-}
-
-/**
- * Obtiene el token de acceso para APIs protegidas
- */
-export async function getAccessToken(): Promise<string | null> {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token || null;
-  } catch (error) {
-    console.error('Error obteniendo token:', error);
-    return null;
-  }
 }

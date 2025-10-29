@@ -1,11 +1,29 @@
 import React from 'react';
-import { Refine } from '@refinedev/core';
+import { Refine, useResource } from '@refinedev/core';
 import { Layout } from 'antd';
 import 'antd/dist/reset.css';
 import { supabase } from '../lib/supabase';
 import { hydrateClientFromServerSession } from '../lib/session-sync';
 import { PropertiesList, PropertiesCreate, PropertiesEdit } from './resources/properties';
 import { InquiriesList } from './resources/inquiries';
+
+// Componente que renderiza las rutas de Refine
+function RefineRoutes() {
+  const { resource, action } = useResource();
+
+  if (resource === 'properties') {
+    if (action === 'create') return <PropertiesCreate />;
+    if (action === 'edit') return <PropertiesEdit />;
+    return <PropertiesList />;
+  }
+
+  if (resource === 'inquiries') {
+    return <InquiriesList />;
+  }
+
+  // Por defecto, mostrar properties list
+  return <PropertiesList />;
+}
 
 function AuthGate({ children }) {
   const [ready, setReady] = React.useState(false);
@@ -87,51 +105,36 @@ export default function AdminApp() {
         options={{ syncWithLocation: true }}
         dataProvider={{
           default: {
-            getList: async ({ resource, pagination, sorters }) => {
+            getList: async ({ resource, pagination, sorters, filters, meta }) => {
               let query = supabase.from(resource);
-
-              if (resource === 'properties') {
-                query = query
-                  .select('*, property_images(id, url, sort_order)', { count: 'exact' })
-                  .order('created_at', { ascending: false });
-              } else if (resource === 'inquiries') {
-                query = query
-                  .select('*, property:properties(title, id)', { count: 'exact' })
-                  .order('created_at', { ascending: false });
-              } else {
-                query = query.select('*', { count: 'exact' });
+              
+              // Para consultas, incluir información de la propiedad
+              if (resource === 'inquiries') {
+                query = query.select(`
+                  *,
+                  property:properties(title, id)
+                `);
               }
-
+              
               if (pagination) {
                 const { current = 1, pageSize = 10 } = pagination;
                 query = query.range((current - 1) * pageSize, current * pageSize - 1);
               }
-
+              
               if (sorters && sorters.length > 0) {
                 const sorter = sorters[0];
                 query = query.order(sorter.field, { ascending: sorter.order === 'asc' });
-              }
-
-              const { data, error, count } = await query;
-              if (error) throw error;
-
-              return { data: data ?? [], total: typeof count === 'number' ? count : data?.length ?? 0 };
-            },
-            getOne: async ({ resource, id }) => {
-              let query = supabase.from(resource);
-
-              if (resource === 'properties') {
-                query = query.select('*, property_images(id, url, sort_order)').eq('id', id).single();
               } else if (resource === 'inquiries') {
-                query = query
-                  .select('*, property:properties(title, id)')
-                  .eq('id', id)
-                  .single();
-              } else {
-                query = query.select('*').eq('id', id).single();
+                query = query.order('created_at', { ascending: false });
               }
-
+              
               const { data, error } = await query;
+              if (error) throw error;
+              
+              return { data, total: data.length };
+            },
+            getOne: async ({ resource, id, meta }) => {
+              const { data, error } = await supabase.from(resource).select('*').eq('id', id).single();
               if (error) throw error;
               return { data };
             },
@@ -339,7 +342,7 @@ export default function AdminApp() {
               minHeight: 'calc(100vh - 64px)',
               padding: '24px'
             }}>
-              {/* Refine enruta internamente */}
+              <RefineRoutes />
             </div>
           </Layout.Content>
         </Layout>

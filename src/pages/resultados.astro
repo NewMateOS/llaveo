@@ -4,15 +4,30 @@ import FavoriteButton from '../components/FavoriteButton.astro';
 
 const api = '/api/search';
 const url = new URL(api, Astro.request.url);
-Astro.url.searchParams.forEach((v,k)=>url.searchParams.set(k,v));
+Astro.url.searchParams.forEach((v: string, k: string) => url.searchParams.set(k, v));
 
-let items: any[] = [];
+interface PropertyItem {
+  id: string;
+  title: string;
+  price: number;
+  city: string;
+  address?: string;
+  description?: string;
+  rooms?: number;
+  baths?: number;
+  area_m2?: number;
+  status?: string;
+  is_active?: boolean;
+  property_images?: Array<{ url: string; sort_order?: number }>;
+}
+
+let items: PropertyItem[] = [];
 let fetchError: string | null = null;
 try {
   const res = await fetch(url.toString());
   if (res.ok) {
     const data = await res.json();
-    items = (data.items || []).filter((item: any) => item?.is_active !== false);
+    items = (data.items || []).filter((item: PropertyItem) => item?.is_active !== false);
   } else {
     fetchError = 'No se pudieron cargar las propiedades.';
     console.error('Error fetching search results:', res.status, res.statusText);
@@ -22,9 +37,9 @@ try {
   fetchError = 'Ocurrió un problema al conectar con la base de datos.';
 }
 
-function firstImg(arr) { 
+function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | undefined): string { 
   if (!arr || !arr.length) return ''; 
-  return arr.sort((a,b)=>(a.sort_order??0)-(b.sort_order??0))[0].url;
+  return arr.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0].url;
 }
 const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
 ---
@@ -390,7 +405,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
       }
 
       // Funcionalidad de favoritos
-      function toggleFavorite(propertyId) {
+      function toggleFavorite(propertyId: string) {
         alert('Para agregar a favoritos necesitas iniciar sesión. Esta funcionalidad estará disponible próximamente.');
       }
     </script>

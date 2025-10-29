@@ -10,7 +10,22 @@ if (!id) {
 }
 
 // Obtener propiedad desde Supabase
-let property: any = null;
+interface Property {
+  id: string;
+  title: string;
+  description?: string;
+  price: number;
+  city: string;
+  address?: string;
+  rooms?: number;
+  baths?: number;
+  area_m2?: number;
+  status: string;
+  created_at: string;
+  property_images?: Array<{ url: string; sort_order?: number }>;
+}
+
+let property: Property | null = null;
 try {
   const { data, error } = await supabase
     .from('properties')
@@ -38,9 +53,9 @@ if (!property) {
   return Astro.redirect('/');
 }
 
-function firstImg(arr: any) { 
+function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | undefined): string { 
   if (!arr || !arr.length) return ''; 
-  return arr.sort((a: any,b: any)=>(a.sort_order??0)-(b.sort_order??0))[0].url;
+  return arr.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0].url;
 }
 
 const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';

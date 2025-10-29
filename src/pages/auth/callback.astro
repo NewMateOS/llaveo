@@ -1,186 +1,77 @@
 ---
 // Página de callback para OAuth
-// Con PKCE, el intercambio debe hacerse en el cliente porque el code_verifier está allí
 export const prerender = false;
 
-// Obtener parámetros de la URL
 const url = new URL(Astro.request.url);
 const code = url.searchParams.get('code');
 const error = url.searchParams.get('error');
 const redirectTo = url.searchParams.get('redirect') || '/';
-
-// Variables de entorno para pasar al cliente
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
-
-// Timestamp único para evitar caché
-const timestamp = Date.now();
 ---
-
 <html>
   <head>
     <title>Procesando autenticación...</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: system-ui;">
+    <div style="text-align: center;">
+      <p>Procesando autenticación...</p>
+    </div>
     <script>
-      import { getSupabaseClient } from '../../lib/supabase-client';
+      import { getSupabaseClient } from '../../lib/supabase-client.js';
       
-      console.log('🔄 [Callback] Script iniciado');
-      
-      // Timeout de seguridad: si el proceso tarda más de 10 segundos, redirigir con error
-      const timeoutId = setTimeout(() => {
-        console.error('⏱️ [Callback] Timeout: El proceso tardó demasiado, redirigiendo...');
-        window.location.href = `/?error=${encodeURIComponent('Timeout: El proceso de autenticación tardó demasiado. Por favor, intenta nuevamente.')}&_t=${Date.now()}`;
-      }, 10000);
-      
-      try {
-        // Usar el mismo cliente que se usa en el resto de la app
-        // Esto asegura que el storageKey y la configuración sean idénticos
+      (async () => {
         const supabase = getSupabaseClient();
-        
-        console.log('✅ [Callback] Cliente Supabase obtenido (mismo que inició el flujo)');
-        
         const urlParams = new URLSearchParams(window.location.search);
-        const codeFromUrl = urlParams.get('code');
         const errorFromUrl = urlParams.get('error');
         const redirectFromUrl = urlParams.get('redirect') || '/';
-        
-        console.log('🔍 [Callback] Parámetros detectados:', {
-          hasCode: !!codeFromUrl,
-          hasError: !!errorFromUrl,
-          redirectTo: redirectFromUrl
-        });
-        
-        (async () => {
-          try {
-            if (errorFromUrl) {
-              clearTimeout(timeoutId);
-              console.error('❌ [Callback] Error en OAuth:', errorFromUrl);
-              window.location.href = `/?error=${encodeURIComponent(errorFromUrl)}&_t=${Date.now()}`;
-              return;
-            }
-            
-            if (codeFromUrl) {
-              console.log('🔄 [Callback] Código OAuth detectado:', codeFromUrl.substring(0, 20) + '...');
-              
-              // Esperar un momento para que Supabase procese automáticamente con detectSessionInUrl
-              console.log('⏳ [Callback] Esperando procesamiento automático de Supabase...');
-              await new Promise(resolve => setTimeout(resolve, 500));
-              
-              // Verificar si Supabase ya procesó el código automáticamente
-              let { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-              
-              if (sessionData?.session) {
-                console.log('✅ [Callback] Supabase procesó el código automáticamente:', sessionData.session.user.email);
-                clearTimeout(timeoutId);
-                
-                // Pequeño delay para asegurar que la sesión se guarde
-                await new Promise(resolve => setTimeout(resolve, 200));
-                
-                // Limpiar el código de la URL y redirigir
-                window.location.href = `${redirectFromUrl}?success=login&_t=${Date.now()}`;
-                return;
-              }
-              
-              // Si no se procesó automáticamente, intentar intercambio manual
-              console.log('🔄 [Callback] No se procesó automáticamente, intentando intercambio manual...');
-              
-              // Verificar localStorage para debug
-              const storage = window.localStorage;
-              const keys = Object.keys(storage);
-              const supabaseKeys = keys.filter(key => 
-                key.includes('supabase') || 
-                key.includes('sb-') || 
-                key.includes('auth') ||
-                key.includes('verifier') ||
-                key.includes('pkce')
-              );
-              
-              console.log('🔍 [Callback] Debug localStorage:', {
-                totalKeys: keys.length,
-                supabaseKeys: supabaseKeys.length,
-                allSupabaseKeys: supabaseKeys
-              });
-              
-              // Intentar intercambio manual con timeout
-              let exchangeResult;
-              let exchangeError = null;
-              
-              try {
-                const exchangePromise = supabase.auth.exchangeCodeForSession(codeFromUrl);
-                const timeoutPromise = new Promise((_, reject) => 
-                  setTimeout(() => reject(new Error('Exchange timeout after 8 seconds')), 8000)
-                );
-                
-                exchangeResult = await Promise.race([exchangePromise, timeoutPromise]);
-              } catch (err) {
-                console.error('❌ [Callback] Timeout o error en intercambio:', err);
-                exchangeError = err;
-                exchangeResult = null;
-              }
-              
-              const data = exchangeResult?.data || null;
-              const exchangeErrorFromResult = exchangeResult?.error || null;
-              const finalError = exchangeError || exchangeErrorFromResult;
-              
-              clearTimeout(timeoutId);
-              
-              // Verificar nuevamente la sesión después del intercambio manual
-              if (finalError) {
-                // Verificar si la sesión se creó de todas formas (puede haber un delay)
-                const { data: checkSession } = await supabase.auth.getSession();
-                if (checkSession?.session) {
-                  console.log('✅ [Callback] Sesión encontrada después del error (delay):', checkSession.session.user.email);
-                  window.location.href = `${redirectFromUrl}?success=login&_t=${Date.now()}`;
-                  return;
-                }
-                
-                console.error('❌ [Callback] Error intercambiando código:', finalError);
-                const errorMessage = finalError.message || finalError.toString() || 'Error intercambiando código';
-                window.location.href = `/?error=${encodeURIComponent(errorMessage)}&_t=${Date.now()}`;
-                return;
-              }
-              
-              if (data?.session) {
-                console.log('✅ [Callback] Sesión creada exitosamente (intercambio manual):', data.session.user.email);
-                
-                // Pequeño delay para asegurar que la sesión se guarde
-                await new Promise(resolve => setTimeout(resolve, 200));
-                
-                // Limpiar el código de la URL y redirigir
-                window.location.href = `${redirectFromUrl}?success=login&_t=${Date.now()}`;
-              } else {
-                console.error('❌ [Callback] No se obtuvo sesión después del intercambio');
-                window.location.href = `/?error=${encodeURIComponent('No se pudo crear la sesión')}&_t=${Date.now()}`;
-              }
-            } else {
-              // No hay código, redirigir normalmente
-              clearTimeout(timeoutId);
-              console.log('🔄 [Callback] No hay código, redirigiendo a:', redirectFromUrl);
-              window.location.href = `${redirectFromUrl}?success=login&_t=${Date.now()}`;
-            }
-          } catch (err) {
-            clearTimeout(timeoutId);
-            console.error('❌ [Callback] Error inesperado:', err);
-            window.location.href = `/?error=${encodeURIComponent('Error procesando la autenticación: ' + (err.message || 'Error desconocido'))}&_t=${Date.now()}`;
+
+        if (errorFromUrl) {
+          window.location.href = `/?error=${encodeURIComponent(errorFromUrl)}`;
+          return;
+        }
+
+        // Supabase con detectSessionInUrl: true procesa automáticamente el código
+        const checkSession = async () => {
+          const { data: { session }, error } = await supabase.auth.getSession();
+          
+          if (error || !session) {
+            window.location.href = `/?error=${encodeURIComponent('Error al procesar la autenticación')}`;
+            return;
           }
-        })();
-      } catch (initError) {
-        clearTimeout(timeoutId);
-        console.error('❌ [Callback] Error inicializando script:', initError);
-        window.location.href = `/?error=${encodeURIComponent('Error inicializando autenticación: ' + (initError.message || 'Error desconocido'))}&_t=${Date.now()}`;
-      }
+
+          // Sincronizar con el servidor para que las cookies se establezcan
+          try {
+            await fetch('/api/auth/session', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({
+                session: {
+                  access_token: session.access_token,
+                  refresh_token: session.refresh_token,
+                },
+              }),
+            });
+          } catch (e) {
+            // Silenciosamente fallar
+          }
+
+          window.location.href = redirectFromUrl;
+        };
+
+        // Intentar inmediatamente y si no hay sesión, esperar un poco
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            await checkSession();
+          } else {
+            setTimeout(checkSession, 500);
+          }
+        } catch (error) {
+          setTimeout(checkSession, 500);
+        }
+      })();
     </script>
-  </head>
-  <body>
-    <div class="min-h-screen flex items-center justify-center bg-gray-50">
-      <div class="text-center">
-        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
-          <span class="text-white font-bold text-2xl">L</span>
-        </div>
-        <h1 class="text-xl font-semibold text-gray-900 mb-2">Procesando autenticación...</h1>
-        <p class="text-gray-600">Por favor espera mientras completamos tu login.</p>
-      </div>
-    </div>
   </body>
 </html>

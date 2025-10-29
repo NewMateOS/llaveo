@@ -2,11 +2,8 @@
 import { getSupabaseServerClient } from '../lib/supabase-server';
 
 const supabaseServer = getSupabaseServerClient(Astro.cookies);
-
-// Verificar si hay una sesión activa
 const { data: { session } } = await supabaseServer.auth.getSession();
 const isLoggedIn = !!session?.user;
-
 const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
 ---
 
@@ -23,7 +20,6 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
     <header class="bg-white shadow-sm border-b border-gray-100">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
-          <!-- Logo -->
           <div class="flex items-center">
             <a href="/" class="flex items-center space-x-3">
               <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
@@ -33,7 +29,6 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
             </a>
           </div>
           
-          <!-- Navigation -->
           <nav class="flex items-center space-x-4">
             <a href="/" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
               Inicio
@@ -45,11 +40,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
               <a href="/admin" class="px-4 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
                 Admin
               </a>
-            ) : (
-              <button onclick="showLoginModal()" class="px-4 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
-                Login
-              </button>
-            )}
+            ) : null}
           </nav>
         </div>
       </div>
@@ -58,24 +49,20 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
     <!-- Main Content -->
     <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
       <div class="text-center">
-        <!-- Icon -->
         <div class="w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg bg-red-50">
           <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
           </svg>
         </div>
 
-        <!-- Title -->
         <h1 class="text-4xl font-bold mb-4" style="color: var(--text-primary);">
           Acceso Denegado
         </h1>
 
-        <!-- Subtitle -->
         <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
           No tienes permisos para acceder a esta página. Contacta con un administrador si crees que esto es un error.
         </p>
 
-        <!-- Actions -->
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
           <a 
             href="/" 
@@ -85,24 +72,16 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
             Volver al Inicio
           </a>
           
-          {!isLoggedIn ? (
-            <button 
-              onclick="showLoginModal()"
-              class="px-8 py-3 rounded-xl font-medium border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all duration-200"
-            >
-              Iniciar Sesión
-            </button>
-          ) : (
+          {isLoggedIn ? (
             <a 
               href="/admin" 
               class="px-8 py-3 rounded-xl font-medium border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all duration-200"
             >
               Panel de Admin
             </a>
-          )}
+          ) : null}
         </div>
 
-        <!-- Additional Info -->
         <div class="mt-12 p-6 bg-white rounded-2xl shadow-sm border border-gray-100 max-w-2xl mx-auto">
           <h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">
             ¿Por qué veo esta página?
@@ -125,7 +104,6 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
       </div>
     </main>
 
-    <!-- Footer -->
     <footer class="bg-white border-t border-gray-100 mt-16">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="text-center text-gray-500 text-sm">
@@ -133,261 +111,5 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
         </div>
       </div>
     </footer>
-
-    <!-- Auth Modal -->
-    <div id="auth-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 relative">
-        <!-- Close Button -->
-        <button 
-          id="close-auth-modal" 
-          class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
-
-        <!-- Logo -->
-        <div class="text-center mb-8">
-          <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
-            <span class="text-white font-bold text-2xl">L</span>
-          </div>
-          <h2 class="text-2xl font-bold mb-2" style="color: var(--text-primary);">
-            Iniciar Sesión
-          </h2>
-          <p class="text-gray-600">
-            Accede a tu cuenta para gestionar propiedades
-          </p>
-        </div>
-
-        <!-- Auth Form -->
-        <form id="auth-form" class="space-y-6">
-          <!-- Email Field -->
-          <div>
-            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              required
-              class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
-              placeholder="tu@email.com"
-            />
-          </div>
-
-          <!-- Password Field -->
-          <div>
-            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              required
-              class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <!-- Submit Button -->
-          <button
-            type="submit"
-            class="w-full py-3 px-4 rounded-lg text-white font-medium shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105 active:scale-95"
-            style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);"
-          >
-            Iniciar Sesión
-          </button>
-
-          <!-- Google OAuth Button -->
-          <button
-            type="button"
-            id="google-auth-btn"
-            class="w-full py-3 px-4 rounded-lg border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-all duration-200 flex items-center justify-center gap-3"
-          >
-            <svg class="w-5 h-5" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            Continuar con Google
-          </button>
-
-          <!-- Register Link -->
-          <div class="text-center text-sm text-gray-600">
-            <span>¿No tienes cuenta? </span>
-            <a href="#" id="register-link" class="text-primary hover:underline font-medium">Crear cuenta</a>
-          </div>
-        </form>
-
-        <!-- Error/Success Messages -->
-        <div id="auth-message" class="mt-4 p-3 rounded-lg hidden"></div>
-      </div>
-    </div>
-
-    <script>
-      import { getSupabaseClient } from '../lib/supabase-client';
-      import { hydrateClientFromServerSession } from '../lib/session-sync';
-
-      const supabase = getSupabaseClient();
-
-      if (!(window as any).hydrateSupabaseSession) {
-        (window as any).hydrateSupabaseSession = () => hydrateClientFromServerSession(supabase);
-      }
-
-      // Verificar si hay sesión en el cliente pero acceso denegado
-      // Esto puede indicar que la sesión no está sincronizada con el servidor
-      (async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          console.log('🔄 [AccessDenied] Sesión encontrada en cliente, intentando sincronizar...');
-          
-          // Intentar sincronizar con el servidor
-          try {
-            const response = await fetch('/api/auth/session', {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              credentials: 'same-origin',
-              body: JSON.stringify({
-                session: {
-                  access_token: session.access_token,
-                  refresh_token: session.refresh_token,
-                },
-              }),
-            });
-            
-            if (response.ok) {
-              console.log('✅ [AccessDenied] Sesión sincronizada, esperando un momento antes de redirigir...');
-              // Esperar un momento más largo para asegurar que la cookie se estableció y el navegador la procesó
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              // Redirigir a /admin con synced=true para indicar que ya se sincronizó
-              window.location.href = '/admin?synced=true';
-            } else {
-              console.error('❌ [AccessDenied] Error al sincronizar sesión:', await response.text());
-            }
-          } catch (error) {
-            console.error('❌ [AccessDenied] Error:', error);
-          }
-        }
-        
-        // También hidratar del servidor al cliente
-        hydrateClientFromServerSession(supabase);
-      })();
-      // DOM elements
-      const authModal = document.getElementById('auth-modal');
-      const authForm = document.getElementById('auth-form');
-      const authMessage = document.getElementById('auth-message');
-      const closeBtn = document.getElementById('close-auth-modal');
-      const googleBtn = document.getElementById('google-auth-btn');
-
-      // Show/hide modal
-      function showLoginModal() {
-        authModal.classList.remove('hidden');
-        authModal.classList.add('flex');
-      }
-
-      function hideAuthModal() {
-        authModal.classList.add('hidden');
-        authModal.classList.remove('flex');
-        authForm.reset();
-        hideMessage();
-      }
-
-      // Message handling
-      function showMessage(message, type = 'error') {
-        authMessage.textContent = message;
-        authMessage.className = `mt-4 p-3 rounded-lg ${type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`;
-        authMessage.classList.remove('hidden');
-      }
-
-      function hideMessage() {
-        authMessage.classList.add('hidden');
-      }
-
-      async function syncSessionWithServer(session) {
-        if (!session?.access_token || !session?.refresh_token) {
-          return;
-        }
-
-        try {
-          const response = await fetch('/api/auth/session', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({
-              session: {
-                access_token: session.access_token,
-                refresh_token: session.refresh_token,
-              },
-            }),
-          });
-
-          if (!response.ok) {
-            console.error('No se pudo sincronizar la sesión con el servidor', await response.text());
-          }
-        } catch (error) {
-          console.error('Error al sincronizar sesión con el servidor', error);
-        }
-      }
-
-      // Auth handlers
-      async function handleEmailAuth(event) {
-        event.preventDefault();
-        hideMessage();
-
-        const formData = new FormData(authForm);
-        const email = formData.get('email');
-        const password = formData.get('password');
-
-        try {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-          });
-          if (error) throw error;
-
-          await syncSessionWithServer(data?.session);
-          await hydrateClientFromServerSession(supabase);
-
-          // Redirect to admin after successful login
-          window.location.href = '/admin';
-        } catch (error) {
-          showMessage(error.message || 'Error en la autenticación');
-        }
-      }
-
-      async function handleGoogleAuth() {
-        try {
-          const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-              redirectTo: `${window.location.origin}/auth/callback?redirect=/admin`
-            }
-          });
-          if (error) throw error;
-        } catch (error) {
-          showMessage(error.message || 'Error con Google OAuth');
-        }
-      }
-
-      // Event listeners
-      closeBtn?.addEventListener('click', hideAuthModal);
-      authForm?.addEventListener('submit', handleEmailAuth);
-      googleBtn?.addEventListener('click', handleGoogleAuth);
-
-      // Close on backdrop click
-      authModal?.addEventListener('click', (e) => {
-        if (e.target === authModal) {
-          hideAuthModal();
-        }
-      });
-
-      // Global functions
-      window.showLoginModal = showLoginModal;
-      window.hideAuthModal = hideAuthModal;
-    </script>
   </body>
 </html>

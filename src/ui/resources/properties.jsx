@@ -16,11 +16,12 @@ import {
   Spin,
   Popconfirm,
 } from 'antd';
-import { supabase } from '../../lib/supabase';
+import { getSupabaseClient } from '../../lib/supabase-client';
 
 const bucket = 'properties';
 
 async function uploadFiles(fileList, sortOrderStart = 0) {
+  const supabase = getSupabaseClient();
   const uploads = [];
   for (const f of fileList) {
     const path = `${crypto.randomUUID()}-${f.name}`;
@@ -39,10 +40,14 @@ export const PropertiesList = () => {
     dataProviderName: 'default',
     syncWithLocation: true,
   });
+  
+  
   return (
     <div>
       <Space style={{ marginBottom: 16 }}>
-        <CreateButton>Crear vivienda</CreateButton>
+        <CreateButton resource="properties">
+          Crear vivienda
+        </CreateButton>
       </Space>
       <Table
         rowKey="id"
@@ -82,8 +87,12 @@ const PropertyFormInner = ({
   loading = false,
 }) => {
   React.useEffect(() => {
-    if (initialValues) {
-      form.setFieldsValue(initialValues);
+    if (initialValues && form) {
+      try {
+        form.setFieldsValue(initialValues);
+      } catch (error) {
+        console.warn('Error setting form fields:', error);
+      }
     }
   }, [form, initialValues]);
 
@@ -201,8 +210,11 @@ const PropertyFormInner = ({
 };
 
 export const PropertiesCreate = () => {
-  const { form } = useForm({ resource: 'properties', redirect: 'list' });
-  const formInstance = form;
+  const { form, formProps, onFinish } = useForm({ 
+    resource: 'properties', 
+    redirect: false,
+    action: 'create'
+  });
 
   const handleFinish = async (values) => {
     try {
@@ -218,14 +230,18 @@ export const PropertiesCreate = () => {
         formValues.is_active = true;
       }
 
+      // Primero crear la propiedad usando Supabase directamente (para obtener el ID)
+      const supabase = getSupabaseClient();
       const { data: prop, error } = await supabase
         .from('properties')
         .insert([formValues])
         .select('id')
         .single();
+      
       if (error) throw error;
 
-      if (fileList.length) {
+      // Subir las imágenes
+      if (fileList.length && prop?.id) {
         const uploaded = await uploadFiles(fileList, 0);
         if (uploaded.length) {
           await supabase.from('property_images').insert(
@@ -234,8 +250,12 @@ export const PropertiesCreate = () => {
         }
       }
 
+      // Llamar al onFinish de Refine para que maneje el redirect y estado
+      if (onFinish) {
+        await onFinish({ ...formValues, id: prop.id });
+      }
+
       message.success('Vivienda creada');
-      window.location.hash = '#/properties';
     } catch (e) {
       console.error('Error creating property', e);
       message.error(String(e.message || e));
@@ -244,7 +264,7 @@ export const PropertiesCreate = () => {
 
   return (
     <PropertyFormInner
-      form={formInstance}
+      form={form}
       onFinish={handleFinish}
       initialValues={{ status: 'venta', is_active: true }}
       existingImages={[]}
@@ -254,7 +274,11 @@ export const PropertiesCreate = () => {
 };
 
 export const PropertiesEdit = () => {
-  const { form, queryResult } = useForm({ resource: 'properties', action: 'edit' });
+  const { form, queryResult, onFinish } = useForm({ 
+    resource: 'properties', 
+    action: 'edit',
+    redirect: false // Deshabilitar redirect automático
+  });
   const record = queryResult?.data?.data;
   const [existingImages, setExistingImages] = React.useState([]);
   const removedImageIdsRef = React.useRef(new Set());
@@ -280,9 +304,21 @@ export const PropertiesEdit = () => {
       const fileList = (formValues.images || []).filter((file) => file.originFileObj);
       delete formValues.images;
 
-      const { error } = await supabase.from('properties').update(formValues).eq('id', record.id);
+      // Actualizar usando Supabase directamente
+      const supabase = getSupabaseClient();
+      const { error } = await supabase
+        .from('properties')
+        .update(formValues)
+        .eq('id', record.id);
+      
       if (error) throw error;
 
+      // Llamar al onFinish de Refine si existe
+      if (onFinish) {
+        await onFinish({ ...formValues, id: record.id });
+      }
+
+      // Manejar las imágenes por separado
       const removedIds = Array.from(removedImageIdsRef.current);
       if (removedIds.length) {
         await supabase.from('property_images').delete().in('id', removedIds);
@@ -299,7 +335,6 @@ export const PropertiesEdit = () => {
       }
 
       message.success('Vivienda actualizada');
-      window.location.hash = '#/properties';
     } catch (e) {
       console.error('Error updating property', e);
       message.error(String(e.message || e));

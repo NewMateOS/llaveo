@@ -142,14 +142,8 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
 </div>
 
 <script>
-  import { getSupabaseClient } from '../lib/supabase-client';
-  import { hydrateClientFromServerSession } from '../lib/session-sync';
-
+  import { getSupabaseClient } from '../lib/supabase-client.js';
   const supabase = getSupabaseClient();
-
-  if (!(window as any).hydrateSupabaseSession) {
-    (window as any).hydrateSupabaseSession = () => hydrateClientFromServerSession(supabase);
-  }
 
   // Auth state
   let currentMode = 'login';
@@ -170,62 +164,26 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
 
   // Initialize auth
   async function initAuth() {
-    console.log('🔐 [AuthModal] Inicializando autenticación...');
-    
-    try {
-      await hydrateClientFromServerSession(supabase);
-
-      // Check current session
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('❌ [AuthModal] Error al obtener sesión inicial:', error);
-      } else if (session) {
-        console.log('✅ [AuthModal] Sesión existente encontrada:', session.user.email);
-        currentUser = session.user;
-        updateAuthState();
-      } else {
-        console.log('ℹ️ [AuthModal] No hay sesión activa');
-      }
-    } catch (error) {
-      console.error('❌ [AuthModal] Error en initAuth:', error);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      currentUser = session.user;
     }
 
     // Listen for auth changes
-    supabase.auth.onAuthStateChange((event, session) => {
-      console.log(`🔄 [AuthModal] Auth state changed: ${event}`, {
-        event,
-        hasSession: !!session,
-        userEmail: session?.user?.email || 'N/A',
-        userId: session?.user?.id || 'N/A'
-      });
-      
+    supabase.auth.onAuthStateChange((event: string, session: { user: any } | null) => {
       currentUser = session?.user || null;
-      updateAuthState();
       
       if (event === 'SIGNED_IN') {
-        console.log('✅ [AuthModal] Usuario inició sesión, actualizando UI');
         hideAuthModal();
-        // Disparar actualización de UI en index.astro
         if ((window as any).updateUserUI) {
-          console.log('📡 [AuthModal] Llamando updateUserUI...');
-          (window as any).updateUserUI(true);
-        } else {
-          console.warn('⚠️ [AuthModal] updateUserUI no está disponible en window');
+          (window as any).updateUserUI();
         }
       } else if (event === 'SIGNED_OUT') {
-        console.log('👋 [AuthModal] Usuario cerró sesión');
         if ((window as any).updateUserUI) {
-          (window as any).updateUserUI(true);
+          (window as any).updateUserUI();
         }
-      } else if (event === 'TOKEN_REFRESHED') {
-        console.log('🔄 [AuthModal] Token refrescado');
-      } else if (event === 'USER_UPDATED') {
-        console.log('👤 [AuthModal] Usuario actualizado');
       }
     });
-    
-    console.log('✅ [AuthModal] Autenticación inicializada, listener configurado');
   }
 
   function updateAuthState() {
@@ -321,13 +279,9 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
         }})
       });
 
-      if (!response.ok) {
-        console.error('⚠️ [AuthModal] No se pudo sincronizar la sesión con el servidor', await response.text());
-      } else {
-        console.log('✅ [AuthModal] Sesión sincronizada con el servidor');
-      }
+      // Silenciosamente fallar si hay error
     } catch (error) {
-      console.error('⚠️ [AuthModal] Error al sincronizar sesión con el servidor:', error);
+      // Silenciosamente fallar
     }
   }
 
