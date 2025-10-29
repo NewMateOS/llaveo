@@ -777,37 +777,106 @@ function firstImg(arr) {
       const urlParams = new URLSearchParams(window.location.search);
       const authSuccess = urlParams.get('success');
       const authError = urlParams.get('error');
+      const authCode = urlParams.get('code');
+      const authCallback = urlParams.get('auth_callback');
 
-      // Limpiar URL primero para evitar bucles
-      if (authSuccess || authError) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
-
-      if (authSuccess === 'login') {
+      // Manejar código de OAuth callback (PKCE requiere intercambio en el cliente)
+      // Con detectSessionInUrl: true, Supabase debería manejar esto automáticamente,
+      // pero si falla, intentamos manualmente después de verificar que el code_verifier esté disponible
+      if (authCode && authCallback) {
+        console.log('🔄 [Index] Código OAuth detectado en URL');
+        
         (async () => {
-          console.log('🔄 [Index] OAuth completado, sincronizando sesión cliente/servidor...');
-          await hydrateClientFromServerSession(supabase);
-
-          // Esperar un momento para que la sesión se sincronice después del redirect OAuth
-          setTimeout(() => {
-            if (!isUpdating) {
-              isUpdating = true;
-              updateUserUI(true).finally(() => {
-                setTimeout(() => { isUpdating = false; }, 500);
-              });
+          try {
+            // Esperar un momento para que Supabase detecte automáticamente el código
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Verificar si Supabase ya procesó el código automáticamente
+            let { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+            
+            if (!sessionData?.session) {
+              console.log('🔄 [Index] Supabase no procesó automáticamente, intentando intercambio manual...');
+              
+              // Intentar intercambio manual (el code_verifier debería estar en localStorage)
+              const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(authCode);
+              
+              if (exchangeError) {
+                console.error('❌ [Index] Error intercambiando código:', exchangeError);
+                
+                // Si el error es que falta el code_verifier, puede ser un problema de almacenamiento
+                if (exchangeError.message.includes('code verifier')) {
+                  console.error('❌ [Index] Error: code_verifier no encontrado. Esto puede ocurrir si:');
+                  console.error('   1. El storage fue limpiado durante el redirect');
+                  console.error('   2. Hay un problema con el dominio/subdominio');
+                  console.error('   3. El código expiró (son válidos por ~10 minutos)');
+                  
+                  alert('Error en la autenticación: El código de verificación no se encuentra. Por favor, intenta iniciar sesión nuevamente.');
+                } else {
+                  alert('Error en la autenticación: ' + exchangeError.message);
+                }
+                
+                // Limpiar URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                return;
+              }
+              
+              if (data.session) {
+                console.log('✅ [Index] Sesión creada desde código OAuth:', data.session.user.email);
+                sessionData = data;
+              }
+            } else {
+              console.log('✅ [Index] Supabase procesó el código automáticamente:', sessionData.session.user.email);
             }
-          }, 300);
+            
+            if (sessionData?.session) {
+              // Limpiar URL de parámetros
+              window.history.replaceState({}, document.title, window.location.pathname);
+              
+              // Actualizar UI
+              if (!isUpdating) {
+                isUpdating = true;
+                await updateUserUI(true);
+                setTimeout(() => { isUpdating = false; }, 500);
+              }
+            }
+          } catch (err) {
+            console.error('❌ [Index] Error inesperado intercambiando código:', err);
+            alert('Error procesando la autenticación');
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
         })();
       } else {
-        // Actualizar UI al cargar la página normalmente
-        updateUserUI();
-      }
+        // Limpiar URL primero para evitar bucles
+        if (authSuccess || authError) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
 
-      if (authError) {
-        // Mostrar mensaje de error
-        setTimeout(() => {
-          alert('Error en la autenticación: ' + decodeURIComponent(authError));
-        }, 100);
+        if (authSuccess === 'login') {
+          (async () => {
+            console.log('🔄 [Index] OAuth completado, sincronizando sesión cliente/servidor...');
+            await hydrateClientFromServerSession(supabase);
+
+            // Esperar un momento para que la sesión se sincronice después del redirect OAuth
+            setTimeout(() => {
+              if (!isUpdating) {
+                isUpdating = true;
+                updateUserUI(true).finally(() => {
+                  setTimeout(() => { isUpdating = false; }, 500);
+                });
+              }
+            }, 300);
+          })();
+        } else {
+          // Actualizar UI al cargar la página normalmente
+          updateUserUI();
+        }
+
+        if (authError) {
+          // Mostrar mensaje de error
+          setTimeout(() => {
+            alert('Error en la autenticación: ' + decodeURIComponent(authError));
+          }, 100);
+        }
       }
     </script>
   </body>
