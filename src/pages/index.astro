@@ -732,6 +732,15 @@ function firstImg(arr) {
       // Función para logout
       (window as any).handleLogout = async function() {
         const { error } = await supabase.auth.signOut();
+        try {
+          await fetch('/api/auth/session', {
+            method: 'DELETE',
+            credentials: 'same-origin'
+          });
+        } catch (apiError) {
+          console.error('Error al limpiar la sesión del servidor:', apiError);
+        }
+
         if (error) {
           console.error('Error al cerrar sesión:', error);
           alert('Error al cerrar sesión');

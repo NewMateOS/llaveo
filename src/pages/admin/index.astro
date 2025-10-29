@@ -3,7 +3,7 @@ import AdminApp from '../../ui/AdminApp.jsx';
 import { protectRoute } from '../../lib/auth';
 
 // Proteger la ruta - solo administradores pueden acceder
-const { user, hasAccess, error } = await protectRoute('admin');
+const { user, hasAccess, error } = await protectRoute(Astro.cookies, 'admin');
 
 if (!hasAccess) {
   // Redirigir a página de acceso denegado
