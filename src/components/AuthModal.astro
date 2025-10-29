@@ -142,7 +142,20 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
 </div>
 
 <script>
-  import { supabase } from '../lib/supabase';
+  // @ts-ignore
+  import { createClient } from '@supabase/supabase-js';
+
+  // Crear cliente de Supabase en el cliente
+  const supabaseUrl = (import.meta as any).env.PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = (import.meta as any).env.PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Supabase credentials not configured');
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: true }
+  });
 
   // Auth state
   let currentMode = 'login';
@@ -175,25 +188,17 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
       currentUser = session?.user || null;
       updateAuthState();
       
-      if (event === 'SIGNED_IN' && onSuccess) {
-        onSuccess();
+      if (event === 'SIGNED_IN') {
         hideAuthModal();
+        // Recargar la página para actualizar el estado del usuario
+        window.location.reload();
       }
     });
   }
 
   function updateAuthState() {
     // Update UI based on auth state
-    const loginBtn = document.querySelector('[onclick="showLoginModal()"]');
-    if (loginBtn) {
-      if (currentUser) {
-        loginBtn.textContent = 'Mi Cuenta';
-        loginBtn.onclick = showUserMenu;
-      } else {
-        loginBtn.textContent = 'Login';
-        loginBtn.onclick = showLoginModal;
-      }
-    }
+    // La UI se actualiza desde index.astro, no necesitamos hacerlo aquí
   }
 
   function showUserMenu() {
@@ -205,14 +210,20 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
   function showAuthModal(mode = 'login') {
     currentMode = mode;
     updateModalContent();
-    authModal.classList.remove('hidden');
-    authModal.classList.add('flex');
+    if (authModal) {
+      authModal.classList.remove('hidden');
+      authModal.classList.add('flex');
+    }
   }
 
   function hideAuthModal() {
-    authModal.classList.add('hidden');
-    authModal.classList.remove('flex');
-    authForm.reset();
+    if (authModal) {
+      authModal.classList.add('hidden');
+      authModal.classList.remove('flex');
+    }
+    if (authForm) {
+      (authForm as HTMLFormElement).reset();
+    }
     hideMessage();
   }
 
@@ -240,34 +251,39 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
     }
 
     // Show/hide fields based on mode
-    if (passwordField) {
+    if (passwordField && passwordField.parentElement) {
       passwordField.parentElement.style.display = currentMode === 'forgot-password' ? 'none' : 'block';
     }
-    if (nameField) {
+    if (nameField && nameField.parentElement) {
       nameField.parentElement.style.display = currentMode === 'register' ? 'block' : 'none';
     }
   }
 
   // Message handling
-  function showMessage(message, type = 'error') {
+  function showMessage(message: string, type = 'error') {
+    if (!authMessage) return;
     authMessage.textContent = message;
     authMessage.className = `mt-4 p-3 rounded-lg ${type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`;
     authMessage.classList.remove('hidden');
   }
 
   function hideMessage() {
-    authMessage.classList.add('hidden');
+    if (authMessage) {
+      authMessage.classList.add('hidden');
+    }
   }
 
   // Auth handlers
-  async function handleEmailAuth(event) {
+  async function handleEmailAuth(event: Event) {
     event.preventDefault();
     hideMessage();
 
-    const formData = new FormData(authForm);
-    const email = formData.get('email');
-    const password = formData.get('password');
-    const name = formData.get('name');
+    if (!authForm) return;
+
+    const formData = new FormData(authForm as HTMLFormElement);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const name = formData.get('name') as string;
 
     try {
       if (currentMode === 'login') {
@@ -291,8 +307,8 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
         if (error) throw error;
         showMessage('¡Email enviado! Revisa tu bandeja de entrada.', 'success');
       }
-    } catch (error) {
-      showMessage(error.message || 'Error en la autenticación');
+    } catch (error: any) {
+      showMessage(error?.message || 'Error en la autenticación');
     }
   }
 
@@ -305,8 +321,8 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
         }
       });
       if (error) throw error;
-    } catch (error) {
-      showMessage(error.message || 'Error con Google OAuth');
+    } catch (error: any) {
+      showMessage(error?.message || 'Error con Google OAuth');
     }
   }
 
@@ -344,10 +360,10 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
   });
 
   // Global functions for external use
-  window.showLoginModal = () => showAuthModal('login');
-  window.showRegisterModal = () => showAuthModal('register');
-  window.showForgotPasswordModal = () => showAuthModal('forgot-password');
-  window.hideAuthModal = hideAuthModal;
+  (window as any).showLoginModal = () => showAuthModal('login');
+  (window as any).showRegisterModal = () => showAuthModal('register');
+  (window as any).showForgotPasswordModal = () => showAuthModal('forgot-password');
+  (window as any).hideAuthModal = hideAuthModal;
 
   // Initialize
   initAuth();
