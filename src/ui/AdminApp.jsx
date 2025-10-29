@@ -43,6 +43,23 @@ function AuthGate({ children }) {
 }
 
 export default function AdminApp() {
+  const handleSignOut = React.useCallback(async () => {
+    const { error } = await supabase.auth.signOut();
+    try {
+      await fetch('/api/auth/session', {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      });
+    } catch (apiError) {
+      console.error('Error al limpiar la sesión del servidor:', apiError);
+    }
+
+    if (error) {
+      console.error('Error al cerrar sesión:', error);
+      alert('Error al cerrar sesión');
+    }
+  }, []);
+
   return (
     <AuthGate>
       <Refine
@@ -242,8 +259,8 @@ export default function AdminApp() {
                   </a>
                 </div>
                 
-                <button 
-                  onClick={() => supabase.auth.signOut()}
+                <button
+                  onClick={handleSignOut}
                   style={{
                     display: 'flex',
                     alignItems: 'center',

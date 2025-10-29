@@ -1,6 +1,10 @@
 ---
 // Página de callback para OAuth
-import { supabase } from '../../lib/supabase';
+import { getSupabaseServerClient } from '../../lib/supabase-server';
+
+export const prerender = false;
+
+const supabase = getSupabaseServerClient(Astro.cookies);
 
 // Headers para prevenir caché
 Astro.setHeaders({
