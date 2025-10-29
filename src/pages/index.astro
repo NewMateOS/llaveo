@@ -203,7 +203,7 @@ function firstImg(arr) {
           </div>
           
           <!-- Navigation -->
-          <nav class="hidden md:flex gap-1">
+          <nav class="hidden md:flex gap-1 items-center">
             <a href="/resultados" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
               Propiedades
             </a>
@@ -216,9 +216,25 @@ function firstImg(arr) {
             <a href="#contacto" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
               Contacto
             </a>
-            <button onclick="showLoginModal()" class="ml-2 px-6 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
-              Login
-            </button>
+            
+            <!-- User Section (will be populated by JavaScript) -->
+            <div id="user-section" class="ml-2 flex items-center gap-3">
+              <!-- Login Button (shown when not logged in) -->
+              <button id="login-btn" onclick="showLoginModal()" class="px-6 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+                Login
+              </button>
+              
+              <!-- User Info (shown when logged in) -->
+              <div id="user-info" class="hidden flex items-center gap-3">
+                <div class="flex items-center gap-2">
+                  <img id="user-avatar" src="" alt="User" class="w-8 h-8 rounded-full border-2 border-gray-200" style="border-color: var(--primary);">
+                  <span id="user-name" class="text-sm font-medium" style="color: var(--text-primary);"></span>
+                </div>
+                <button onclick="handleLogout()" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors duration-200">
+                  Salir
+                </button>
+              </div>
+            </div>
           </nav>
           
           <!-- Mobile Menu Button -->
@@ -629,19 +645,84 @@ function firstImg(arr) {
     <!-- Auth Modal Component -->
     <AuthModal />
 
-    <script is:inline>
+    <script>
+      import { createClient } from '@supabase/supabase-js';
+
+      const supabaseUrl = (import.meta as any).env.PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = (import.meta as any).env.PUBLIC_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseAnonKey) {
+        console.error('Supabase credentials not configured');
+      }
+
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+      // Función para actualizar la UI según el estado de autenticación
+      async function updateUserUI() {
+        const { data: { session } } = await supabase.auth.getSession();
+        const loginBtn = document.getElementById('login-btn');
+        const userInfo = document.getElementById('user-info');
+        const userName = document.getElementById('user-name');
+        const userAvatar = document.getElementById('user-avatar') as HTMLImageElement | null;
+
+        if (session?.user) {
+          // Usuario logueado - mostrar info del usuario
+          if (loginBtn) loginBtn.classList.add('hidden');
+          if (userInfo) userInfo.classList.remove('hidden');
+          
+          // Obtener nombre del usuario
+          const name = session.user.user_metadata?.full_name || 
+                      session.user.user_metadata?.name || 
+                      session.user.email?.split('@')[0] || 
+                      'Usuario';
+          
+          if (userName) userName.textContent = name;
+          
+          // Obtener avatar
+          const avatar = session.user.user_metadata?.avatar_url || 
+                       session.user.user_metadata?.picture ||
+                       `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=EB9561&color=fff&size=128`;
+          
+          if (userAvatar) {
+            userAvatar.src = avatar;
+            userAvatar.alt = name;
+          }
+        } else {
+          // Usuario no logueado - mostrar botón de login
+          if (loginBtn) loginBtn.classList.remove('hidden');
+          if (userInfo) userInfo.classList.add('hidden');
+        }
+      }
+
+      // Función para logout
+      (window as any).handleLogout = async function() {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.error('Error al cerrar sesión:', error);
+          alert('Error al cerrar sesión');
+        } else {
+          await updateUserUI();
+          window.location.href = '/';
+        }
+      };
+
+      // Escuchar cambios en el estado de autenticación
+      supabase.auth.onAuthStateChange((_event, session) => {
+        updateUserUI();
+      });
+
+      // Actualizar UI al cargar la página
+      updateUserUI();
+
       // Manejar mensajes de autenticación
       const urlParams = new URLSearchParams(window.location.search);
       const authSuccess = urlParams.get('success');
       const authError = urlParams.get('error');
 
       if (authSuccess === 'login') {
-        // Mostrar mensaje de éxito
-        setTimeout(() => {
-          alert('¡Login exitoso! Bienvenido.');
-          // Limpiar URL
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }, 100);
+        // Actualizar UI y limpiar URL
+        updateUserUI();
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
 
       if (authError) {
