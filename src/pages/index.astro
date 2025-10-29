@@ -713,10 +713,17 @@ function firstImg(arr) {
         }
       };
 
+      // Bandera para evitar múltiples actualizaciones
+      let isUpdating = false;
+
       // Escuchar cambios en el estado de autenticación
       supabase.auth.onAuthStateChange((event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
-        updateUserUI();
+        if (!isUpdating) {
+          isUpdating = true;
+          updateUserUI().finally(() => {
+            setTimeout(() => { isUpdating = false; }, 500);
+          });
+        }
       });
 
       // Manejar mensajes de autenticación desde URL
@@ -724,12 +731,21 @@ function firstImg(arr) {
       const authSuccess = urlParams.get('success');
       const authError = urlParams.get('error');
 
+      // Limpiar URL primero para evitar bucles
+      if (authSuccess || authError) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
       if (authSuccess === 'login') {
-        // Forzar actualización de UI con refresh después del redirect OAuth
-        updateUserUI(true).then(() => {
-          // Limpiar URL después de actualizar
-          window.history.replaceState({}, document.title, window.location.pathname);
-        });
+        // Esperar un momento para que la sesión se sincronice después del redirect OAuth
+        setTimeout(() => {
+          if (!isUpdating) {
+            isUpdating = true;
+            updateUserUI(true).finally(() => {
+              setTimeout(() => { isUpdating = false; }, 500);
+            });
+          }
+        }, 300);
       } else {
         // Actualizar UI al cargar la página normalmente
         updateUserUI();
@@ -739,8 +755,6 @@ function firstImg(arr) {
         // Mostrar mensaje de error
         setTimeout(() => {
           alert('Error en la autenticación: ' + decodeURIComponent(authError));
-          // Limpiar URL
-          window.history.replaceState({}, document.title, window.location.pathname);
         }, 100);
       }
     </script>
