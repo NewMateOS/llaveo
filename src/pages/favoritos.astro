@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import FavoriteButton from '../components/FavoriteButton.astro';
+import '../styles/global.css';
 
 const brand = (import.meta as any).env.PUBLIC_BRAND_NAME || 'LLAVE';
 
@@ -21,7 +22,6 @@ function firstImg(images: any[]): string {
   <title>Mis Favoritos - LLAVE</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="generator" content={Astro.generator} />
-  <link rel="stylesheet" href="/src/styles/global.css" />
 </head>
 <body>
   <div class="min-h-screen bg-gray-50">
@@ -198,18 +198,9 @@ function firstImg(images: any[]): string {
   </div>
 
   <script>
-    // @ts-ignore
-    import { createClient } from '@supabase/supabase-js';
+    import { getSupabaseClient } from '../lib/supabase-client';
 
-    const supabaseUrl = (import.meta as any).env.PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = (import.meta as any).env.PUBLIC_SUPABASE_ANON_KEY;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true
-      }
-    });
+    const supabase = getSupabaseClient();
 
     // Verificar sesión y cargar favoritos
     async function initFavoritos() {

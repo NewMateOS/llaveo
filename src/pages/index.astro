@@ -1,6 +1,7 @@
 ---
 import SearchBar from '../components/SearchBar.astro';
 import AuthModal from '../components/AuthModal.astro';
+import '../styles/global.css';
 
 const q = Astro.url.searchParams.get('q') ?? '';
 const brand = (import.meta as any).env.PUBLIC_BRAND_NAME || 'LLAVE';
@@ -134,7 +135,6 @@ function firstImg(arr) {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{brand} · Gestión Inmobiliaria</title>
-    <link rel="stylesheet" href="/src/styles/global.css" />
     <style>
       :root {
         --primary: #EB9561;
@@ -646,23 +646,9 @@ function firstImg(arr) {
     <AuthModal />
 
     <script>
-      // @ts-ignore
-      import { createClient } from '@supabase/supabase-js';
+      import { getSupabaseClient } from '../lib/supabase-client';
 
-      const supabaseUrl = (import.meta as any).env.PUBLIC_SUPABASE_URL;
-      const supabaseAnonKey = (import.meta as any).env.PUBLIC_SUPABASE_ANON_KEY;
-
-      if (!supabaseUrl || !supabaseAnonKey) {
-        console.error('Supabase credentials not configured');
-      }
-
-      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true
-        }
-      });
+      const supabase = getSupabaseClient();
 
       // Función para actualizar la UI según el estado de autenticación
       async function updateUserUI(forceRefresh = false) {

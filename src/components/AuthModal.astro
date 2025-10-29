@@ -142,24 +142,9 @@ const { mode = 'login', onSuccess, onError } = Astro.props;
 </div>
 
 <script>
-  // @ts-ignore
-  import { createClient } from '@supabase/supabase-js';
+  import { getSupabaseClient } from '../lib/supabase-client';
 
-  // Crear cliente de Supabase en el cliente
-  const supabaseUrl = (import.meta as any).env.PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = (import.meta as any).env.PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Supabase credentials not configured');
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true
-    }
-  });
+  const supabase = getSupabaseClient();
 
   // Auth state
   let currentMode = 'login';
