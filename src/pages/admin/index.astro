@@ -1,13 +1,17 @@
 ---
 import AdminApp from '../../ui/AdminApp.jsx';
-import { protectRoute } from '../../lib/auth';
+import { securityMiddleware } from '../../lib/middleware';
+import { applySecurityHeaders } from '../../lib/security';
 
 // Proteger la ruta - solo administradores pueden acceder
-const { user, hasAccess, error } = await protectRoute(Astro.cookies, 'admin');
+const { user, hasAccess, error, response } = await securityMiddleware(Astro.cookies, {
+  requireAuth: true,
+  requireRole: 'admin',
+  redirectTo: '/access-denied'
+});
 
-if (!hasAccess) {
-  // Redirigir a página de acceso denegado
-  return Astro.redirect('/access-denied');
+if (!hasAccess || response) {
+  return response || Astro.redirect('/access-denied');
 }
 
 const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
@@ -19,7 +23,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
     <title>Panel de Administración · {brand}</title>
     <link rel="stylesheet" href="/src/styles/global.css" />
   </head>
-  <body class="min-h-screen" style={`background:${import.meta.env.PUBLIC_BRAND_COLOR||'#E2905C'}`}>
+  <body class="min-h-screen" style="background: #F7FAFC;">
     <div id="root"><AdminApp client:load /></div>
   </body>
 </html>

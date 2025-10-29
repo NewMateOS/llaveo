@@ -1,5 +1,14 @@
 import type { APIRoute } from 'astro';
 import { createClient } from '@supabase/supabase-js';
+import { 
+  rateLimit, 
+  validateEmail, 
+  validatePropertyId, 
+  getClientIP, 
+  createSecureResponse, 
+  createErrorResponse,
+  sanitizeInput 
+} from '../../lib/security';
 
 // Importante: marcar como no prerenderizado para que pueda acceder a request.headers
 export const prerender = false;
@@ -7,16 +16,23 @@ export const prerender = false;
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('❌ Variables de entorno de Supabase no configuradas');
+}
+
 // GET - Obtener favoritos del usuario
 export const GET: APIRoute = async ({ request }: { request: Request }) => {
   try {
+    // Rate limiting
+    const clientIP = getClientIP(request);
+    if (!rateLimit(`favorites_get_${clientIP}`, 60, 15 * 60 * 1000)) {
+      return createErrorResponse('Demasiadas solicitudes. Intenta más tarde.', 429);
+    }
+
     // Obtener token de autorización
     const authHeader = request.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Token de autorización requerido' }), { 
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return createErrorResponse('Token de autorización requerido', 401);
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -27,10 +43,12 @@ export const GET: APIRoute = async ({ request }: { request: Request }) => {
     
     if (authError || !user) {
       console.error('❌ [Favorites API GET] Error verificando usuario:', authError);
-      return new Response(JSON.stringify({ error: 'Sesión inválida: ' + (authError?.message || 'Token inválido') }), { 
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return createErrorResponse('Sesión inválida: ' + (authError?.message || 'Token inválido'), 401);
+    }
+
+    // Validar email del usuario
+    if (user.email && !validateEmail(user.email)) {
+      return createErrorResponse('Email de usuario inválido', 400);
     }
 
     // Crear cliente autenticado para las consultas
@@ -121,29 +139,27 @@ export const GET: APIRoute = async ({ request }: { request: Request }) => {
       });
     }
 
-    return new Response(JSON.stringify({ favorites: favorites || [] }), { 
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return createSecureResponse({ favorites: favorites || [] });
 
   } catch (error) {
     console.error('API Error:', error);
-    return new Response(JSON.stringify({ error: 'Error interno del servidor' }), { 
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return createErrorResponse('Error interno del servidor', 500);
   }
 };
 
 // POST - Agregar/quitar favorito
 export const POST: APIRoute = async ({ request }: { request: Request }) => {
   try {
+    // Rate limiting
+    const clientIP = getClientIP(request);
+    if (!rateLimit(`favorites_post_${clientIP}`, 30, 15 * 60 * 1000)) {
+      return createErrorResponse('Demasiadas solicitudes. Intenta más tarde.', 429);
+    }
+
     // Obtener token de autorización
     const authHeader = request.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Token de autorización requerido' }), { 
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return createErrorResponse('Token de autorización requerido', 401);
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -217,13 +233,22 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
       }
     }
 
-    const { property_id, action } = await request.json();
+    const body = await request.json();
+    const { property_id, action } = body;
 
+    // Validar entrada
     if (!property_id || !action) {
-      return new Response(JSON.stringify({ error: 'property_id y action son requeridos' }), { 
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return createErrorResponse('property_id y action son requeridos', 400);
+    }
+
+    // Validar property_id
+    if (!validatePropertyId(property_id)) {
+      return createErrorResponse('ID de propiedad inválido', 400);
+    }
+
+    // Validar action
+    if (!['add', 'remove'].includes(action)) {
+      return createErrorResponse('Acción inválida. Use "add" o "remove"', 400);
     }
 
     if (action === 'add') {

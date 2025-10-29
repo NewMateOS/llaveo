@@ -7,12 +7,19 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "docker:dev": "docker-compose up --build",
+    "docker:prod": "docker-compose -f docker-compose.preview.yml up --build -d",
+    "docker:down": "docker-compose -f docker-compose.preview.yml down",
+    "docker:logs": "docker logs -f llave-web-preview",
+    "docker:build": "docker build -f Dockerfile.prod -t llaveo:prod .",
+    "docker:rebuild": "docker-compose -f docker-compose.preview.yml build --no-cache && docker-compose -f docker-compose.preview.yml up -d"
   },
   "dependencies": {
     "astro": "^5.0.0",
     "@astrojs/tailwind": "^6.0.0",
     "@astrojs/react": "^4.0.0",
+    "@astrojs/node": "^9.0.0",
     "@astrojs/netlify": "^6.0.0",
     "@refinedev/core": "^5.0.0",
     "@refinedev/antd": "^6.0.0",

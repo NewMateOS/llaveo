@@ -50,9 +50,9 @@ const { value = '' } = Astro.props;
         <h3 class="text-sm font-medium text-gray-700 uppercase tracking-wide">Filtros</h3>
         <button 
           type="button" 
+          id="toggle-filters-btn"
           class="text-sm font-medium transition-colors duration-200 hover:text-primary"
           style="color: var(--primary);"
-          onclick="toggleFilters()"
         >
           <span id="toggle-text">Mostrar filtros</span>
           <svg id="toggle-icon" class="w-4 h-4 ml-1 inline transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,6 +156,7 @@ const { value = '' } = Astro.props;
 </form>
 
 <script>
+  // Función para toggle de filtros
   function toggleFilters() {
     const container = document.getElementById('filters-container');
     const toggleText = document.getElementById('toggle-text');
@@ -172,5 +173,27 @@ const { value = '' } = Astro.props;
       toggleText.textContent = 'Mostrar filtros';
       toggleIcon.style.transform = 'rotate(0deg)';
     }
+  }
+
+  // Hacer la función disponible globalmente para compatibilidad
+  (window as any).toggleFilters = toggleFilters;
+
+  // Agregar event listener cuando el DOM esté listo
+  function setupToggleFilters() {
+    const toggleBtn = document.getElementById('toggle-filters-btn');
+    if (toggleBtn) {
+      // Remover listener previo si existe
+      toggleBtn.removeEventListener('click', toggleFilters);
+      // Agregar nuevo listener
+      toggleBtn.addEventListener('click', toggleFilters);
+    }
+  }
+
+  // Ejecutar cuando el DOM esté listo
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupToggleFilters);
+  } else {
+    // DOM ya está cargado
+    setupToggleFilters();
   }
 </script>
