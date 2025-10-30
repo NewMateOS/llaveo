@@ -11,9 +11,10 @@ const { propertyId, isFavorite = false, onToggle } = Astro.props;
 
 <button 
   id={`favorite-btn-${propertyId}`}
-  class="favorite-btn group flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-200 hover:scale-110 active:scale-95"
+  class="favorite-btn group flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-200 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
   data-property-id={propertyId}
   data-is-favorite={isFavorite}
+  aria-pressed={isFavorite}
   style={`
     background: ${isFavorite ? 'var(--primary)' : 'transparent'};
     border-color: var(--primary);

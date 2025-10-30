@@ -51,7 +51,8 @@ try {
 
 function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | undefined): string { 
   if (!arr || !arr.length) return ''; 
-  return arr.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0].url;
+  const sorted = [...arr].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  return sorted[0]?.url || '';
 }
 ---
 <html lang="es">
@@ -59,85 +60,30 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{brand} · Gestión Inmobiliaria</title>
-    <style>
-      :root {
-        --primary: #EB9561;
-        --primary-light: #F2B085;
-        --primary-dark: #D17A3F;
-        --secondary: #2D3748;
-        --accent: #F7FAFC;
-        --text-primary: #1A202C;
-        --text-secondary: #4A5568;
-        --text-muted: #718096;
-        --surface: #FFFFFF;
-        --surface-elevated: #F7FAFC;
-        --border: #E2E8F0;
-        --shadow: rgba(235, 149, 97, 0.1);
-        --shadow-lg: rgba(235, 149, 97, 0.15);
-      }
-      
-      .gradient-primary {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-      }
-      
-      .gradient-text {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-      
-      .glass-effect {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-      
-      .card-hover {
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      
-      .card-hover:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 25px 50px -12px var(--shadow-lg);
-      }
-      
-      .btn-primary {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      
-      .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px -5px var(--shadow-lg);
-      }
-    </style>
+    
   </head>
-  <body class="min-h-screen" style="background: linear-gradient(135deg, #F7FAFC 0%, #EDF2F7 100%);">
+  <body class="min-h-screen">
     <!-- Header - Material Design App Bar -->
-    <header class="bg-white sticky top-0 z-50 shadow-sm border-b border-gray-100">
+    <header class="bg-white sticky top-0 z-50 shadow-sm border-b border-gray-100 app-header">
       <div class="max-w-7xl mx-auto px-6 py-4">
         <div class="flex justify-between items-center">
           <!-- Logo Section -->
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
-              <span class="text-white font-bold text-lg">L</span>
-            </div>
-            <div class="text-2xl font-bold" style="color: var(--text-primary);">{brand}</div>
+            <img src="/logo.svg" alt={brand} class="h-10 w-auto" />
           </div>
           
           <!-- Navigation -->
           <nav class="hidden md:flex gap-1 items-center">
-            <a href="/resultados" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
+            <a href="/resultados" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100 link-underline" style="color: var(--text-secondary);">
               Propiedades
             </a>
-            <a href="/favoritos" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
+            <a href="/favoritos" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100 link-underline" style="color: var(--text-secondary);">
               Favoritos
             </a>
-            <a href="#servicios" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
+            <a href="#servicios" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100 link-underline" style="color: var(--text-secondary);">
               Servicios
             </a>
-            <a href="#contacto" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
+            <a href="#contacto" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100 link-underline" style="color: var(--text-secondary);">
               Contacto
             </a>
             
@@ -162,66 +108,333 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
           </nav>
           
           <!-- Mobile Menu Button -->
-          <button class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-            <svg class="w-6 h-6" style="color: var(--text-secondary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200" aria-label="Menú móvil">
+            <svg id="menu-icon" class="w-6 h-6" style="color: var(--text-secondary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
+            <svg id="close-icon" class="w-6 h-6 hidden" style="color: var(--text-secondary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
           </button>
+          
+          <!-- Mobile Menu -->
+          <div id="mobile-menu" class="hidden md:hidden absolute top-full left-0 right-0 bg-white border-t border-gray-100 shadow-lg z-50">
+            <nav class="flex flex-col p-4 space-y-2">
+              <a href="/resultados" class="px-4 py-2 rounded-lg text-base font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
+                Propiedades
+              </a>
+              <a href="/favoritos" class="px-4 py-2 rounded-lg text-base font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
+                Favoritos
+              </a>
+              <a href="#servicios" class="px-4 py-2 rounded-lg text-base font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
+                Servicios
+              </a>
+              <a href="#contacto" class="px-4 py-2 rounded-lg text-base font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
+                Contacto
+              </a>
+              <div class="pt-4 border-t border-gray-100">
+                <button id="mobile-login-btn" onclick="showLoginModal()" class="w-full px-6 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+                  Login
+                </button>
+              </div>
+            </nav>
+          </div>
         </div>
       </div>
     </header>
 
-    <!-- Hero Section - Material Design -->
-    <section class="relative bg-white py-20">
-      <!-- Background Pattern -->
-      <div class="absolute inset-0 opacity-5">
-        <div class="absolute inset-0" style="background-image: radial-gradient(circle at 1px 1px, var(--primary) 1px, transparent 0); background-size: 20px 20px;"></div>
-      </div>
-      
-      <div class="relative max-w-7xl mx-auto px-6 text-center">
-        <!-- Badge -->
-        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 mb-8">
-          <div class="w-2 h-2 rounded-full" style="background: var(--primary);"></div>
-          <span class="text-sm font-medium" style="color: var(--text-secondary);">Tu hogar perfecto te espera</span>
-        </div>
-        
-        <!-- Main Heading -->
-        <h1 class="text-5xl md:text-6xl font-bold mb-6 leading-tight" style="color: var(--text-primary);">
-          Encuentra tu<br>
-          <span style="color: var(--primary);">hogar ideal</span>
-        </h1>
-        
-        <!-- Subtitle -->
-        <p class="text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-          Descubre las mejores propiedades con nuestra plataforma inteligente.<br>
-          <span class="font-medium" style="color: var(--text-primary);">Navegación fácil, información completa y asesoramiento profesional.</span>
-        </p>
-        
-        <!-- Search Bar -->
-        <div class="max-w-7xl mx-auto mb-16">
-        <SearchBar value={q} />
-        </div>
-        
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-            <div class="text-3xl font-bold mb-2" style="color: var(--primary);">500+</div>
-            <div class="text-sm font-medium text-gray-600">Propiedades disponibles</div>
+    <!-- Hero Section - Buscador centrado a pantalla completa -->
+    <section id="hero" class="relative min-h-[calc(100vh-72px)] flex items-center justify-center overflow-hidden" style="background: #ffffff;">
+      <canvas id="hero-blob" class="absolute inset-0 w-full h-full" style="pointer-events: none; display: block;"></canvas>
+      <div class="relative w-full px-6">
+        <div class="max-w-4xl mx-auto">
+          <div class="text-center mb-8 reveal" style="transition-delay: 60ms;">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 border border-gray-100 shadow-sm mb-4">
+              <div class="w-2 h-2 rounded-full" data-blob-react-bg="brand" style="background: var(--primary);"></div>
+              <span class="text-xs font-medium" style="color: var(--text-secondary);">Encuentra tu próximo hogar</span>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-3" style="color: var(--text-primary);">
+              Búsqueda <span id="smart-word" class="gradient-text" data-blob-react="brand">inteligente</span> de viviendas
+            </h1>
+            <p class="text-base md:text-lg max-w-2xl mx-auto" style="color: var(--text-secondary);">
+              Filtra por ciudad, precio y características. Rápido, claro y centrado en ti.
+            </p>
           </div>
-          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-            <div class="text-3xl font-bold mb-2" style="color: var(--primary);">50+</div>
-            <div class="text-sm font-medium text-gray-600">Ciudades</div>
+          <SearchBar value={q} city="" status="" minRooms="" minPrice="" maxPrice="" />
+          <!-- Hero CTAs -->
+          <div class="mt-6 flex justify-center reveal" style="transition-delay: 220ms;">
+            <a href="/resultados" class="px-6 py-3 rounded-xl text-base font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 btn-primary focus-ring inline-flex items-center justify-center">
+              Explorar propiedades
+            </a>
           </div>
-          <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-            <div class="text-3xl font-bold mb-2" style="color: var(--primary);">1000+</div>
-            <div class="text-sm font-medium text-gray-600">Clientes satisfechos</div>
-          </div>
+          <!-- Quick chips -->
+          
+
+          <!-- Categorías con imagen (hero-style highlights) -->
+          
+
+          <!-- Trust badges -->
+          
         </div>
       </div>
     </section>
+    <!-- Sección destino del scroll -->
+    <section id="destacadas" data-home-after-hero class="max-w-7xl mx-auto px-6 py-16 md:py-24" style="background: transparent;">
+      <div class="text-center mb-8 reveal">
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-3" style="color: var(--text-primary);">Propiedades destacadas</h2>
+        <p class="text-base md:text-lg" style="color: var(--text-secondary);">Explora una selección curada mientras ajustas tu búsqueda.</p>
+      </div>
+      <!-- Placeholder de contenido futuro -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+        <div class="h-48 rounded-xl shimmer"></div>
+        <div class="h-48 rounded-xl shimmer"></div>
+        <div class="h-48 rounded-xl shimmer"></div>
+      </div>
+    </section>
+    <!-- Scroll Down cue -->
+    <button id="scroll-down" aria-label="Desplazar hacia contenido" class="absolute bottom-6 left-1/2 -translate-x-1/2 inline-flex flex-col items-center gap-1 text-sm focus-ring reveal" style="transition-delay: 300ms; z-index: 20;">
+      <span class="px-3 py-1 rounded-full bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm" style="color: var(--text-secondary);">Scroll</span>
+      <span class="w-9 h-9 rounded-full flex items-center justify-center bg-white/90 shadow-md hover:shadow-lg transition-all duration-200">
+        <svg class="w-5 h-5 animate-bounce" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </span>
+    </button>
+    <script>
+      const hero = document.getElementById('hero');
+      const blobCanvas = document.getElementById('hero-blob') as HTMLCanvasElement | null;
+      const reactiveEls = () => Array.from(hero?.querySelectorAll('[data-blob-react="brand"]') || []) as HTMLElement[];
+      const reactiveBgEls = () => Array.from(hero?.querySelectorAll('[data-blob-react-bg="brand"]') || []) as HTMLElement[];
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        // WebGL blob (fallback a 2D si no disponible)
+      function initBlob() {
+        if (!blobCanvas) return () => {};
+        const gl = blobCanvas.getContext('webgl');
+        let raf = 0;
+        let animationActive2D = true;
+        let animationActiveWebGL = true;
+        
+        function resize() {
+          if (!blobCanvas) return;
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          const rectHero = hero!.getBoundingClientRect();
+          const w = rectHero.width;
+          const h = rectHero.height;
+          blobCanvas.width = Math.floor(w * dpr);
+          blobCanvas.height = Math.floor(h * dpr);
+          if (gl) gl.viewport(0, 0, blobCanvas.width, blobCanvas.height);
+        }
+        const onResize = () => resize();
+        window.addEventListener('resize', onResize);
+
+        if (!gl) {
+          // Fallback 2D
+          const ctx = blobCanvas!.getContext('2d');
+          let mx = 0.5, my = 0.5, t = 0;
+          let lastTime = 0;
+          const targetFPS = 30; // Reducir a 30fps para mejor rendimiento
+          const frameTime = 1000 / targetFPS;
+          
+          function draw(currentTime: number) {
+            if (!animationActive2D || !ctx) return;
+            
+            // Throttle a ~30fps
+            if (currentTime - lastTime >= frameTime) {
+              const { width, height } = blobCanvas!;
+              ctx.clearRect(0, 0, width, height);
+              const cx = width * mx;
+              const cy = height * my;
+              const hr = hero!.getBoundingClientRect();
+              const baseCss = Math.min(hr.width, hr.height) * 0.40;
+              const rCss = baseCss * (1 + 0.02 * Math.sin(t * 0.001));
+              const scale = Math.min(blobCanvas!.width / hr.width, blobCanvas!.height / hr.height);
+              const rCanvas = rCss * scale;
+              ctx.fillStyle = 'rgba(226,144,92,0.75)';
+              ctx.beginPath();
+              ctx.arc(cx, cy, rCanvas, 0, Math.PI * 2);
+              ctx.fill();
+              const cxCss = hr.left + (cx / blobCanvas!.width) * hr.width;
+              const cyCss = hr.top + (cy / blobCanvas!.height) * hr.height;
+              applyBleach(cxCss, cyCss, rCss);
+              t += prefersReduced ? 0 : 16;
+              lastTime = currentTime;
+            }
+            raf = requestAnimationFrame(draw);
+          }
+          function onMove(e: MouseEvent) {
+            const rect = hero!.getBoundingClientRect();
+            mx = (e.clientX - rect.left) / rect.width;
+            my = (e.clientY - rect.top) / rect.height;
+            applyBleach(rect.left + rect.width*mx, rect.top + rect.height*my);
+          }
+          resize();
+          requestAnimationFrame(draw);
+          window.addEventListener('mousemove', onMove, { passive: true });
+          
+          // Pausar animación cuando el usuario no interactúa
+          let inactivityTimer2D = 0;
+          function resetInactivityTimer2D() {
+            animationActive2D = true;
+            clearTimeout(inactivityTimer2D);
+            inactivityTimer2D = setTimeout(() => {
+              animationActive2D = false;
+            }, 3000); // Pausar después de 3s de inactividad
+          }
+          resetInactivityTimer2D();
+          window.addEventListener('mousemove', resetInactivityTimer2D, { passive: true });
+          
+          return () => {
+            animationActive2D = false;
+            cancelAnimationFrame(raf);
+            clearTimeout(inactivityTimer2D);
+            window.removeEventListener('resize', onResize);
+            window.removeEventListener('mousemove', onMove as any);
+            window.removeEventListener('mousemove', resetInactivityTimer2D as any);
+          };
+        }
+
+        // WebGL shader sencillo: metabola orgánica con ruido y cursor
+        const vertSrc = `
+          attribute vec2 aPos;
+          void main(){ gl_Position = vec4(aPos, 0.0, 1.0); }
+        `;
+        const fragSrc = `
+          precision highp float;
+          uniform vec2 uRes; uniform float uTime; uniform vec2 uMouse;
+          // pseudo-noise
+          float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453123); }
+          float noise(in vec2 p){ vec2 i = floor(p); vec2 f = fract(p);
+            float a = hash(i), b = hash(i+vec2(1.,0.)), c = hash(i+vec2(0.,1.)), d = hash(i+vec2(1.,1.));
+            vec2 u = f*f*(3.-2.*f); return mix(a,b,u.x)+ (c-a)*u.y*(1.-u.x)+ (d-b)*u.x*u.y; }
+          void main(){ vec2 uv = gl_FragCoord.xy/uRes; vec2 m = uMouse/uRes; 
+            vec2 aspect = vec2(uRes.x/uRes.y, 1.0);
+            float t = uTime*0.001;
+            float baseR = 0.40; // radio relativo al lado menor
+            float R = baseR * (1.0 + 0.02 * sin(t));
+            float d = length((uv - m) * aspect) - R;
+            float alpha = step(d, 0.0); // borde nítido
+            vec3 col = vec3(0.886,0.565,0.361);
+            gl_FragColor = vec4(col, alpha*0.85);
+          }
+        `;
+        function compile(type: number, src: string){ const s = gl!.createShader(type)!; gl!.shaderSource(s, src); gl!.compileShader(s); return s; }
+        const vs = compile(gl.VERTEX_SHADER, vertSrc);
+        const fs = compile(gl.FRAGMENT_SHADER, fragSrc);
+        const prog = gl.createProgram()!; gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+        gl.useProgram(prog);
+        const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+        const aPos = gl.getAttribLocation(prog, 'aPos'); gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+        const uRes = gl.getUniformLocation(prog, 'uRes');
+        const uTime = gl.getUniformLocation(prog, 'uTime');
+        const uMouse = gl.getUniformLocation(prog, 'uMouse');
+        let t = 0, mx = 0.5, my = 0.5;
+        let lastTimeWebGL = 0;
+        const targetFPS = 30;
+        const frameTime = 1000 / targetFPS;
+        
+        function onMove(e: MouseEvent){
+          const r = hero!.getBoundingClientRect();
+          mx = (e.clientX - r.left)/r.width; my = (e.clientY - r.top)/r.height;
+          applyBleach(r.left + r.width*mx, r.top + r.height*my);
+        }
+
+        // Detección de solape blob-elemento y blanqueo
+        function applyBleach(cxCss: number, cyCss: number, rCss?: number){
+          const hr = hero!.getBoundingClientRect();
+          const cx = cxCss;
+          const cy = cyCss;
+          const base = Math.min(hr.width, hr.height) * 0.40;
+          const rOuter = rCss ?? base * (1 + 0.02 * Math.sin(performance.now() * 0.001));
+          
+          // Cachear reactive elements para evitar múltiples querySelectorAll
+          const reactiveElements = reactiveEls();
+          const reactiveBgElements = reactiveBgEls();
+          
+          // Actualizar variables locales para blanqueo parcial
+          reactiveElements.forEach(el => {
+            const b = el.getBoundingClientRect();
+            const localX = cx - b.left;
+            const localY = cy - b.top;
+            el.style.setProperty('--blob-x', localX + 'px');
+            el.style.setProperty('--blob-y', localY + 'px');
+            el.style.setProperty('--blob-r', rOuter + 'px');
+            el.classList.add('brand-reactive');
+          });
+          reactiveBgElements.forEach(el => {
+            const b = el.getBoundingClientRect();
+            const localX = cx - b.left;
+            const localY = cy - b.top;
+            el.style.setProperty('--blob-x', localX + 'px');
+            el.style.setProperty('--blob-y', localY + 'px');
+            el.style.setProperty('--blob-r', rOuter + 'px');
+            el.classList.add('brand-reactive-bg');
+          });
+        }
+        
+        function drawWebGL(currentTime: number){ 
+          if (!gl || !animationActiveWebGL) return;
+          
+          if (currentTime - lastTimeWebGL >= frameTime) {
+            t += prefersReduced ? 0 : 16;
+            gl.uniform2f(uRes, blobCanvas!.width, blobCanvas!.height);
+            gl.uniform1f(uTime, t);
+            gl.uniform2f(uMouse, mx*blobCanvas!.width, (1.0 - my)*blobCanvas!.height);
+            
+            // Sincronizar máscara con WebGL usando el mismo radio
+            const hr = hero!.getBoundingClientRect();
+            const baseCss = Math.min(hr.width, hr.height) * 0.40;
+            const rCss = baseCss * (1 + 0.02 * Math.sin(t * 0.001));
+            applyBleach(hr.left + hr.width*mx, hr.top + hr.height*my, rCss);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            lastTimeWebGL = currentTime;
+          }
+          raf = requestAnimationFrame(drawWebGL);
+        }
+        
+        // Pausar animación cuando el usuario no interactúa
+        let inactivityTimerWebGL = 0;
+        function resetInactivityTimerWebGL() {
+          animationActiveWebGL = true;
+          clearTimeout(inactivityTimerWebGL);
+          inactivityTimerWebGL = setTimeout(() => {
+            animationActiveWebGL = false;
+          }, 3000);
+        }
+        resetInactivityTimerWebGL();
+        
+        resize();
+        requestAnimationFrame(drawWebGL);
+        window.addEventListener('mousemove', onMove, { passive: true });
+        window.addEventListener('mousemove', resetInactivityTimerWebGL, { passive: true });
+        
+        return () => { 
+          animationActiveWebGL = false;
+          cancelAnimationFrame(raf);
+          clearTimeout(inactivityTimerWebGL);
+          window.removeEventListener('resize', onResize);
+          window.removeEventListener('mousemove', onMove as any);
+          window.removeEventListener('mousemove', resetInactivityTimerWebGL as any);
+        };
+      }
+      const stopBlob = initBlob();
+
+      // Scroll down interactividad
+      const scrollBtn = document.getElementById('scroll-down');
+      const scrollTarget = document.querySelector('[data-home-after-hero]') as HTMLElement | null;
+      scrollBtn?.addEventListener('click', () => {
+        if (scrollTarget) {
+          scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
+        }
+      });
+
+      // No rotador de fondos; el blob es el único fondo interactivo
+    </script>
 
     <!-- Featured Properties - Material Design -->
-    <section id="propiedades" class="py-32 bg-gray-50">
+    <section id="propiedades" class="py-32 reveal" style="background: transparent;">
       <div class="max-w-7xl mx-auto px-6">
         <!-- Section Header -->
         <div class="text-center mb-20">
@@ -243,19 +456,25 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
         ) : featuredProperties.length > 0 ? (
           <div class="space-y-8">
             {featuredProperties.map((property) => (
-              <article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200 w-full">
+              <article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200 w-full reveal card-hover hover-lift tilt-hover group">
                 <div class="flex flex-col lg:flex-row">
                   <!-- Image Container -->
                   <div class="relative overflow-hidden h-96 lg:h-[500px] lg:w-1/2">
+                    <div class="absolute inset-0 shimmer"></div>
                     <img
                       src={firstImg(property.property_images) || 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=800&h=600&fit=crop'}
                       alt={property.title}
-                      class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      class="w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.02]"
+                      width="800"
+                      height="600"
                       loading="lazy"
+                      decoding="async"
+                      onload="this.previousElementSibling && (this.previousElementSibling.style.display='none')"
                     />
+                    <div class="pointer-events-none absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
                     <!-- Status Badge -->
                     <div class="absolute top-6 right-6">
-                      <span class="px-4 py-2 rounded-full text-sm font-medium text-white shadow-sm" style="background: var(--primary);">
+                      <span class="px-4 py-2 rounded-full text-sm font-medium text-white shadow-sm badge-soft" style="background: color-mix(in srgb, var(--primary) 85%, #fff); color: #fff; border: none;">
                         {property.status === 'venta' ? 'Venta' : 'Alquiler'}
                       </span>
                     </div>
@@ -362,7 +581,7 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
         <!-- Services Grid - Material Design Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <!-- Service 1 - Material Design Card -->
-          <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+          <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group tilt-hover">
             <!-- Icon Container - Material Design FAB -->
             <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
               <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -376,7 +595,7 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
           </div>
           
           <!-- Service 2 - Material Design Card -->
-          <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+          <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group tilt-hover">
             <!-- Icon Container - Material Design FAB -->
             <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
               <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -390,7 +609,7 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
           </div>
           
           <!-- Service 3 - Material Design Card -->
-          <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+          <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group tilt-hover">
             <!-- Icon Container - Material Design FAB -->
             <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
               <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -404,7 +623,7 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
           </div>
           
           <!-- Service 4 - Material Design Card -->
-          <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+          <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group tilt-hover">
             <!-- Icon Container - Material Design FAB -->
             <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
               <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -421,7 +640,7 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
     </section>
 
     <!-- CTA Section - Material Design -->
-    <section class="py-32 bg-gray-50">
+    <section class="py-32 bg-gray-50 reveal brand-surface-soft">
       <div class="max-w-7xl mx-auto px-6 text-center">
         <div class="max-w-4xl mx-auto">
           <!-- Badge -->
@@ -441,13 +660,13 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
           </p>
           
           <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/resultados" class="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-lg font-medium text-white shadow-sm hover:shadow-md transition-all duration-200" style="background: var(--primary);">
+            <a href="/resultados" class="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-lg font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 btn-primary focus-ring">
               Buscar Propiedades
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
               </svg>
             </a>
-            <a href="#contacto" class="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-lg font-medium border border-gray-300 hover:bg-gray-50 transition-all duration-200" style="color: var(--text-primary);">
+            <a href="#contacto" class="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-lg font-medium btn-ghost focus-ring">
               Contactar
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
@@ -459,28 +678,25 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
     </section>
 
     <!-- Footer - Material Design -->
-    <footer id="contacto" class="py-16 bg-white border-t border-gray-100">
+    <footer id="contacto" class="py-16 bg-white border-t border-gray-100 reveal">
       <div class="max-w-7xl mx-auto px-6">
         <!-- Main Footer Content -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           <!-- Brand -->
           <div class="md:col-span-2">
             <div class="flex items-center gap-3 mb-6">
-              <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style="background: var(--primary);">
-                <span class="text-white font-bold text-lg">L</span>
-              </div>
-              <div class="text-2xl font-bold" style="color: var(--text-primary);">{brand}</div>
+              <img src="/logo.svg" alt={brand} class="h-10 w-auto" />
             </div>
             <p class="text-gray-600 mb-6 leading-relaxed max-w-md">
               Tu plataforma inmobiliaria de confianza. Encuentra, compara y contacta con las mejores propiedades de manera fácil y segura.
             </p>
             <div class="flex gap-3">
-              <a href="#" class="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors duration-200">
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors duration-200 link-underline" aria-label="Síguenos en Twitter">
                 <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
+                  <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 处长195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.着小-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
                 </svg>
               </a>
-              <a href="#" class="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors duration-200">
+              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors duration-200 link-underline" aria-label="Síguenos en Facebook">
                 <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.2-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21a4.22 4.22 0 0 1-1.93.07 4.28 4.28 0 0 0 4 2.98 8.521 8.521 0 0 1-5.33 1.84c-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21 16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z"/>
                 </svg>
@@ -492,10 +708,10 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
           <div>
             <h3 class="text-sm font-semibold mb-4 uppercase tracking-wide" style="color: var(--text-primary);">Enlaces</h3>
             <ul class="space-y-3">
-              <li><a href="/resultados" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200">Todas las propiedades</a></li>
-              <li><a href="/admin" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200">Panel de administración</a></li>
-              <li><a href="#servicios" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200">Servicios</a></li>
-              <li><a href="#propiedades" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200">Propiedades destacadas</a></li>
+              <li><a href="/resultados" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200 link-underline">Todas las propiedades</a></li>
+              <li><a href="/admin" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200 link-underline">Panel de administración</a></li>
+              <li><a href="#servicios" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200 link-underline">Servicios</a></li>
+              <li><a href="#propiedades" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200 link-underline">Propiedades destacadas</a></li>
             </ul>
           </div>
           
@@ -549,9 +765,9 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
               © 2024 {brand}. Todos los derechos reservados.
             </div>
             <div class="flex gap-6">
-              <a href="#" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200">Política de Privacidad</a>
-              <a href="#" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200">Términos de Uso</a>
-              <a href="#" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200">Cookies</a>
+              <a href="/privacidad" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200 link-underline">Política de Privacidad</a>
+              <a href="/terminos" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200 link-underline">Términos de Uso</a>
+              <a href="/cookies" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200 link-underline">Cookies</a>
             </div>
           </div>
         </div>
@@ -633,8 +849,87 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
         window.history.replaceState({}, document.title, window.location.pathname);
       }
 
+      // Header elevated on scroll
+      const headerEl = document.querySelector('header.app-header');
+      const elevateHeader = () => {
+        if (!headerEl) return;
+        if (window.scrollY > 6) headerEl.classList.add('header-elevated');
+        else headerEl.classList.remove('header-elevated');
+      };
+      window.addEventListener('scroll', elevateHeader, { passive: true });
+      elevateHeader();
+
+      // Reveal on scroll - optimizado con IntersectionObserver
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!prefersReducedMotion && 'IntersectionObserver' in window) {
+        // Usar requestIdleCallback si está disponible para mejor rendimiento
+        const observeReveal = () => {
+          const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+              }
+            });
+          }, { threshold: 0.1, rootMargin: '0px 0px -5% 0px' }); // Reducido threshold para activar antes
+
+          document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+        };
+        
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(observeReveal, { timeout: 2000 });
+        } else {
+          setTimeout(observeReveal, 0);
+        }
+      } else {
+        document.querySelectorAll('.reveal').forEach((el) => el.classList.add('is-visible'));
+      }
+
       // Actualizar UI al cargar la página
       updateUserUI();
+
+      // Funcionalidad del menú móvil
+      const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+      const mobileMenu = document.getElementById('mobile-menu');
+      const menuIcon = document.getElementById('menu-icon');
+      const closeIcon = document.getElementById('close-icon');
+
+      if (mobileMenuBtn && mobileMenu && menuIcon && closeIcon) {
+        mobileMenuBtn.addEventListener('click', () => {
+          const isHidden = mobileMenu.classList.contains('hidden');
+          if (isHidden) {
+            mobileMenu.classList.remove('hidden');
+            menuIcon.classList.add('hidden');
+            closeIcon.classList.remove('hidden');
+          } else {
+            mobileMenu.classList.add('hidden');
+            menuIcon.classList.remove('hidden');
+            closeIcon.classList.add('hidden');
+          }
+        });
+
+        // Cerrar menú al hacer clic en un enlace
+        const mobileLinks = mobileMenu.querySelectorAll('a');
+        mobileLinks.forEach(link => {
+          link.addEventListener('click', () => {
+            mobileMenu.classList.add('hidden');
+            menuIcon.classList.remove('hidden');
+            closeIcon.classList.add('hidden');
+          });
+        });
+      }
+
+      // Actualizar botón de login en menú móvil
+      const mobileLoginBtn = document.getElementById('mobile-login-btn');
+      if (mobileLoginBtn) {
+        supabase.auth.onAuthStateChange((_event: any, session: any) => {
+          if (session?.user) {
+            mobileLoginBtn.style.display = 'none';
+          } else {
+            mobileLoginBtn.style.display = 'block';
+          }
+        });
+      }
     </script>
   </body>
 </html>

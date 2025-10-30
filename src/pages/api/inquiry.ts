@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '../../lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { 
   rateLimit, 
   validateEmail, 
@@ -10,10 +10,53 @@ import {
   sanitizeInput 
 } from '../../lib/security';
 
+// Usar service_role si está disponible, sino usar cliente anónimo con RLS
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+
+// Crear cliente: preferir service_role (bypass RLS), sino usar anon key (requiere políticas RLS)
+let supabase: ReturnType<typeof createClient> | null = null;
+let supabaseConfigError: string | null = null;
+
+if (!supabaseUrl) {
+  supabaseConfigError = 'PUBLIC_SUPABASE_URL no está configurada';
+} else if (!supabaseServiceKey && !supabaseAnonKey) {
+  supabaseConfigError = 'No se encontró SUPABASE_SERVICE_ROLE_KEY ni PUBLIC_SUPABASE_ANON_KEY';
+} else {
+  const keyToUse = supabaseServiceKey || supabaseAnonKey;
+  supabase = createClient(supabaseUrl, keyToUse, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+  
+  if (supabaseServiceKey) {
+    console.log('✅ Usando service_role key (bypass RLS)');
+  } else {
+    console.log('⚠️ Usando anon key (requiere políticas RLS configuradas)');
+  }
+}
+
+if (supabaseConfigError) {
+  console.error('❌ Configuración de Supabase:', supabaseConfigError);
+}
+
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
   try {
+    // Verificar que Supabase está configurado
+    if (!supabase || supabaseConfigError) {
+      console.error('❌ Supabase no configurado:', supabaseConfigError || 'Cliente no inicializado');
+      return createErrorResponse(
+        `Error de configuración del servidor: ${supabaseConfigError || 'Variables de entorno de Supabase no configuradas'}. ` +
+        'Verifica que PUBLIC_SUPABASE_URL y PUBLIC_SUPABASE_ANON_KEY estén configuradas en tu archivo .env',
+        500
+      );
+    }
+
     // Rate limiting
     const clientIP = getClientIP(request);
     if (!rateLimit(`inquiry_post_${clientIP}`, 10, 15 * 60 * 1000)) {
@@ -23,17 +66,27 @@ export const POST: APIRoute = async ({ request }) => {
     const body = await request.json();
     let { property_id, name, email, phone, message } = body;
 
+    // Validar que el body existe
+    if (!body || typeof body !== 'object') {
+      return createErrorResponse('Formulario inválido. Por favor, completa todos los campos requeridos.', 400);
+    }
+
     // Validar campos requeridos
     if (!property_id || !name || !email) {
-      return createErrorResponse('Faltan campos requeridos: property_id, name y email son obligatorios', 400);
+      return createErrorResponse('Faltan campos requeridos: Nombre y Email son obligatorios', 400);
     }
 
     // Sanitizar inputs
     property_id = String(property_id).trim();
-    name = sanitizeInput(String(name || ''));
+    name = sanitizeInput(String(name || '')).trim();
     email = String(email || '').trim().toLowerCase();
-    phone = phone ? sanitizeInput(String(phone)) : null;
-    message = message ? sanitizeInput(String(message)) : null;
+    phone = phone ? sanitizeInput(String(phone)).trim() : null;
+    message = message ? sanitizeInput(String(message)).trim() : null;
+
+    // Validar que los campos no estén vacíos después de trim
+    if (!property_id || !name || !email) {
+      return createErrorResponse('Los campos Nombre y Email no pueden estar vacíos', 400);
+    }
 
     // Validar formato de email
     if (!validateEmail(email)) {
@@ -73,22 +126,42 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Insertar la consulta
+    // Nota: Si la columna 'status' no existe, simplemente no la incluimos en el insert
+    const insertData: any = {
+      property_id,
+      name,
+      email,
+      phone: phone || null,
+      message: message || null,
+      status: 'pending' // Si la columna no existe, Supabase ignorará este campo
+    };
+    
     const { data, error } = await supabase
       .from('inquiries')
-      .insert([{
-        property_id,
-        name,
-        email,
-        phone: phone || null,
-        message: message || null,
-        status: 'pending'
-      }])
+      .insert([insertData])
       .select()
       .single();
 
     if (error) {
-      console.error('Error inserting inquiry:', error);
-      return createErrorResponse('Error al guardar la consulta: ' + error.message, 500);
+      console.error('❌ Error inserting inquiry:', error);
+      console.error('   Code:', error.code);
+      console.error('   Details:', error.details);
+      console.error('   Hint:', error.hint);
+      
+      // Mensaje más descriptivo basado en el código de error
+      let errorMessage = 'Error al guardar la consulta: ' + error.message;
+      
+      if (error.code === '42501' || error.message?.includes('row-level security')) {
+        errorMessage = 'Error de permisos: Las políticas de seguridad (RLS) no permiten insertar consultas. ' +
+          'Verifica que hayas ejecutado las políticas RLS en Supabase (ver MIGRATIONS.md). ' +
+          'Si ya las ejecutaste, verifica que la política "Allow public to insert inquiries" esté activa.';
+      } else if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        errorMessage = 'Error de base de datos: La tabla o columna no existe. Verifica el esquema de la base de datos.';
+      } else if (error.code === '23503' || error.message?.includes('foreign key')) {
+        errorMessage = 'Error: La propiedad especificada no existe.';
+      }
+      
+      return createErrorResponse(errorMessage, 500);
     }
 
     return createSecureResponse({ 

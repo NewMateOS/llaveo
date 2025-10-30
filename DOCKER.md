@@ -115,7 +115,7 @@ Una vez que el contenedor esté ejecutándose, puedes verificar:
 
 1. Verifica las variables de entorno:
 ```bash
-docker-compose -rello.yml config
+docker-compose -f docker-compose.preview.yml config
 ```
 
 2. Revisa los logs:

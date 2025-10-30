@@ -1,13 +1,83 @@
 import React from 'react';
 import { useTable } from '@refinedev/antd';
-import { Table, Tag, Space } from 'antd';
+import { Table, Tag, Space, Alert, Select, message, Popconfirm } from 'antd';
+import { getSupabaseClient } from '../../lib/supabase-client';
+
+// Componente para manejar el cambio de estado de una consulta
+const StatusSelect = ({ inquiryId, initialStatus, onUpdate }) => {
+  const [currentStatus, setCurrentStatus] = React.useState(initialStatus || 'pending');
+  const [loading, setLoading] = React.useState(false);
+  
+  // Actualizar el estado local si cambia initialStatus desde fuera
+  React.useEffect(() => {
+    setCurrentStatus(initialStatus || 'pending');
+  }, [initialStatus]);
+  
+  const handleStatusChange = async (newStatus) => {
+    setLoading(true);
+    try {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase
+        .from('inquiries')
+        .update({ status: newStatus })
+        .eq('id', inquiryId);
+      
+      if (error) throw error;
+      
+      setCurrentStatus(newStatus);
+      message.success('Estado actualizado correctamente');
+      // Notificar al componente padre para recargar
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Error actualizando estado:', error);
+      message.error('Error al actualizar el estado: ' + (error.message || error));
+      // Revertir el cambio en caso de error
+      setCurrentStatus(initialStatus || 'pending');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  return (
+    <Select
+      value={currentStatus}
+      onChange={handleStatusChange}
+      loading={loading}
+      style={{ width: '100%' }}
+      options={[
+        { value: 'pending', label: 'Pendiente' },
+        { value: 'responded', label: 'Respondida' },
+        { value: 'archived', label: 'Archivada' }
+      ]}
+    />
+  );
+};
 
 export const InquiriesList = () => {
-  const { tableProps } = useTable({ 
+  const { tableProps, tableQueryResult } = useTable({ 
     resource: 'inquiries',
     dataProviderName: 'default',
     syncWithLocation: true
   });
+
+  // Mostrar errores si los hay
+  if (tableQueryResult?.isError) {
+    return (
+      <div style={{ padding: '24px' }}>
+        <Alert
+          message="Error al cargar las consultas"
+          description={tableQueryResult?.error?.message || 'No se pudieron cargar las consultas. Verifica que tengas permisos para acceder a esta tabla.'}
+          type="error"
+          showIcon
+        />
+        <div style={{ marginTop: '16px' }}>
+          <pre style={{ background: '#f5f5f5', padding: '16px', borderRadius: '4px', overflow: 'auto' }}>
+            {JSON.stringify(tableQueryResult?.error, null, 2)}
+          </pre>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -64,10 +134,13 @@ export const InquiriesList = () => {
           {
             title: 'Estado',
             dataIndex: 'status',
-            render: (status) => (
-              <Tag color={status === 'responded' ? 'green' : 'orange'}>
-                {status === 'responded' ? 'Respondida' : 'Pendiente'}
-              </Tag>
+            width: 180,
+            render: (status, record) => (
+              <StatusSelect 
+                inquiryId={record.id} 
+                initialStatus={status || 'pending'}
+                onUpdate={() => tableQueryResult?.refetch?.()}
+              />
             )
           }
         ]}
@@ -94,6 +167,19 @@ export const InquiriesList = () => {
                   </div>
                 </div>
               )}
+              <div style={{ marginTop: 8 }}>
+                <strong>Estado actual:</strong> 
+                <Tag 
+                  color={
+                    (record.status || 'pending') === 'responded' ? 'green' : 
+                    (record.status || 'pending') === 'archived' ? 'default' : 'orange'
+                  }
+                  style={{ marginLeft: 8 }}
+                >
+                  {(record.status || 'pending') === 'responded' ? 'Respondida' : 
+                   (record.status || 'pending') === 'archived' ? 'Archivada' : 'Pendiente'}
+                </Tag>
+              </div>
             </div>
           ),
           rowExpandable: (record) => true,

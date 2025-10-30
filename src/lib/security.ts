@@ -55,19 +55,49 @@ export function applySecurityHeaders(response: Response, isHttps: boolean = fals
 export function rateLimit(identifier: string, maxRequests: number = 100, windowMs: number = 15 * 60 * 1000): boolean {
   const now = Date.now();
   const key = identifier;
+  
   const current = rateLimitMap.get(key);
 
-  if (!current || now > current.resetTime) {
+  // Si la entrada existe pero está expirada, eliminarla antes de crear una nueva
+  if (current && now > current.resetTime) {
+    rateLimitMap.delete(key);
+  }
+
+  // Limpiar otras entradas expiradas periódicamente (1% de las veces para evitar penalizar performance)
+  if (Math.random() < 0.01) {
+    cleanupExpiredEntries(now);
+  }
+
+  // Si no hay entrada o fue expirada (y ya eliminada), crear nueva
+  if (!rateLimitMap.has(key)) {
     rateLimitMap.set(key, { count: 1, resetTime: now + windowMs });
     return true;
   }
 
-  if (current.count >= maxRequests) {
+  const entry = rateLimitMap.get(key)!;
+  
+  if (entry.count >= maxRequests) {
     return false;
   }
 
-  current.count++;
+  entry.count++;
   return true;
+}
+
+// Función para limpiar entradas expiradas del Map
+function cleanupExpiredEntries(now: number): void {
+  const entriesToDelete: string[] = [];
+  
+  for (const [key, value] of rateLimitMap.entries()) {
+    if (now > value.resetTime) {
+      entriesToDelete.push(key);
+    }
+  }
+  
+  // Eliminar entradas expiradas
+  for (const key of entriesToDelete) {
+    rateLimitMap.delete(key);
+  }
 }
 
 export function validateEmail(email: string): boolean {

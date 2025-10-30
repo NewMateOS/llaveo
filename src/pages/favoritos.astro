@@ -9,7 +9,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
 // Función para obtener la primera imagen
 function firstImg(images: Array<{ url: string; sort_order?: number }> | null | undefined): string {
   if (!images || images.length === 0) return '/placeholder-property.jpg';
-  const sorted = images.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  const sorted = [...images].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
   return sorted[0]?.url || '/placeholder-property.jpg';
 }
 ---
@@ -24,24 +24,19 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
   <meta name="generator" content={Astro.generator} />
 </head>
 <body>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50 brand-surface-soft">
     <!-- Header -->
-    <div class="bg-white border-b border-gray-100">
+    <div class="bg-white border-b border-gray-100 app-header sticky top-0 z-40">
       <div class="max-w-7xl mx-auto px-6 py-6">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-4">
             <a href="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity duration-200">
-              <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style="background: var(--primary);">
-                <span class="text-white font-bold text-lg">L</span>
-              </div>
-              <span class="text-xl font-bold" style="color: var(--text-primary);">
-                {brand}
-              </span>
+              <img src="/logo.svg" alt={brand} class="h-10 w-auto" />
             </a>
           </div>
           
           <div class="flex items-center gap-4">
-            <a href="/resultados" class="text-gray-600 hover:text-primary transition-colors duration-200">
+            <a href="/resultados" class="text-gray-600 hover:text-primary transition-colors duration-200 link-underline focus-ring">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
@@ -64,7 +59,7 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-6 py-8">
       <!-- Page Header -->
-      <div class="mb-8">
+      <div class="mb-8 reveal">
         <h1 class="text-3xl font-bold mb-2" style="color: var(--text-primary);">
           Mis Favoritos
         </h1>
@@ -73,12 +68,33 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
         </p>
       </div>
 
-      <!-- Loading State -->
-      <div id="loading-state" class="text-center py-16">
-        <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gray-100 flex items-center justify-center">
-          <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <!-- Loading State / Skeletons -->
+      <div id="loading-state" class="py-6 reveal is-visible">
+        <div class="space-y-6">
+          {Array.from({ length: 2 }).map(() => (
+            <article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden w-full">
+              <div class="flex flex-col lg:flex-row">
+                <div class="relative overflow-hidden h-64 lg:h-80 lg:w-1/2 shimmer"></div>
+                <div class="p-8 lg:w-1/2 flex flex-col justify-between">
+                  <div class="space-y-4">
+                    <div class="h-7 w-3/4 shimmer rounded"></div>
+                    <div class="h-4 w-1/2 shimmer rounded"></div>
+                    <div class="h-16 w-full shimmer rounded"></div>
+                    <div class="flex gap-4">
+                      <div class="h-5 w-24 shimmer rounded"></div>
+                      <div class="h-5 w-24 shimmer rounded"></div>
+                      <div class="h-5 w-24 shimmer rounded"></div>
+                    </div>
+                  </div>
+                  <div class="mt-6 flex gap-3">
+                    <div class="h-11 flex-1 shimmer rounded-lg"></div>
+                    <div class="h-11 w-32 shimmer rounded-lg"></div>
+                  </div>
+                </div>
+              </div>
+            </article>
+          ))}
         </div>
-        <p class="text-gray-600">Cargando favoritos...</p>
       </div>
 
       <!-- Empty State (hidden by default) -->
@@ -96,8 +112,7 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
         </p>
         <a 
           href="/resultados"
-          class="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200"
-          style="background: var(--primary);"
+          class="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 btn-primary"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -107,7 +122,7 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
       </div>
 
       <!-- Favorites Container (hidden by default) -->
-      <div id="favorites-container" class="space-y-6 hidden"></div>
+      <div id="favorites-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 hidden"></div>
     </div>
   </div>
 
@@ -120,7 +135,7 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
           <h3 class="text-lg font-semibold" style="color: var(--text-primary);">Consultar Propiedad</h3>
           <button
             onclick="closeInquiryModal()"
-            class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors duration-200"
+            class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors duration-200 focus-ring"
           >
             <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -187,7 +202,7 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
             <button
               type="button"
               onclick="closeInquiryModal()"
-              class="px-4 py-3 rounded-lg text-sm font-medium border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all duration-200"
+              class="px-4 py-3 rounded-lg text-sm font-medium border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all duration-200 focus-ring"
             >
               Cancelar
             </button>
@@ -198,6 +213,38 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
   </div>
 
   <script>
+    // Header elevated on scroll
+    const headerEl = document.querySelector('.app-header');
+    const elevateHeader = () => {
+      if (!headerEl) return;
+      if (window.scrollY > 6) headerEl.classList.add('header-elevated');
+      else headerEl.classList.remove('header-elevated');
+    };
+    window.addEventListener('scroll', elevateHeader, { passive: true });
+    elevateHeader();
+
+    // Reveal on scroll - optimizado (para tarjetas renderizadas dinámicamente)
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let revealObserver: IntersectionObserver | null = null;
+    function setupRevealObserver() {
+      if (prefersReducedMotion || !('IntersectionObserver' in window)) return;
+      revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            revealObserver?.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -5% 0px' }); // Optimizado
+    }
+    
+    // Usar requestIdleCallback si está disponible
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(setupRevealObserver, { timeout: 2000 });
+    } else {
+      setTimeout(setupRevealObserver, 0);
+    }
+
     import { getSupabaseClient } from '../lib/supabase-client.js';
     const supabase = getSupabaseClient();
 
@@ -291,50 +338,56 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
               if (!property) return '';
               
               const firstImgUrl = property.property_images && property.property_images.length > 0
-                ? property.property_images.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))[0].url
+                ? [...property.property_images].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))[0].url
                 : '/placeholder-property.jpg';
 
               return `
-                <article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
-                  <div class="flex flex-col lg:flex-row">
-                    <div class="relative overflow-hidden h-64 lg:h-80 lg:w-1/2">
-                      <a href="/propiedad/${property.id}" class="block">
-                        <img src="${firstImgUrl}" alt="${property.title}" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" loading="lazy" />
-                      </a>
-                      <div class="absolute top-4 right-4">
-                        <span class="px-3 py-1 rounded-full text-xs font-medium text-white shadow-sm" style="background: var(--primary);">
-                          ${property.status === 'venta' ? 'Venta' : 'Alquiler'}
-                        </span>
-                      </div>
+                <article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200 h-full reveal group">
+                  <div class="relative overflow-hidden h-56 md:h-64">
+                    <a href="/propiedad/${property.id}" class="block">
+                      <div class="absolute inset-0 shimmer"></div>
+                      <img src="${firstImgUrl}" alt="${property.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" onload="this.previousElementSibling && (this.previousElementSibling.style.display='none')" />
+                    </a>
+                    <div class="absolute top-3 right-3">
+                      <span class="px-3 py-1 rounded-full text-xs font-medium text-white shadow-sm badge-soft" style="background: color-mix(in srgb, var(--primary) 85%, #fff); color: #fff; border: none;">
+                        ${property.status === 'venta' ? 'Venta' : 'Alquiler'}
+                      </span>
                     </div>
-                    <div class="p-8 lg:w-1/2 flex flex-col justify-between">
-                      <div>
-                        <a href="/propiedad/${property.id}" class="block hover:opacity-80 transition-opacity duration-200">
-                          <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">${property.title}</h2>
-                          <div class="flex items-center mb-4 text-gray-600">
-                            <svg class="w-5 h-5 mr-2" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
-                            <span class="text-base">${property.address} · ${property.city}</span>
-                          </div>
-                          <p class="text-gray-600 mb-6 leading-relaxed">${property.description || 'Descripción no disponible'}</p>
-                        </a>
+                  </div>
+                  <div class="p-6 flex flex-col gap-5">
+                    <a href="/propiedad/${property.id}" class="block hover:opacity-80 transition-opacity duration-200">
+                      <h2 class="text-xl font-semibold mb-2 line-clamp-1 md:line-clamp-2" style="color: var(--text-primary);">${property.title}</h2>
+                      <div class="flex items-center mb-3 text-gray-600">
+                        <svg class="w-5 h-5 mr-2" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span class="text-sm md:text-base">${property.address} · ${property.city}</span>
                       </div>
-                      <div class="flex items-center justify-between pt-6 border-t border-gray-100">
-                        <div class="text-2xl font-bold" style="color: var(--primary);">
-                          ${new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(Number(property.price||0))}
-                        </div>
-                        <a href="/propiedad/${property.id}" class="px-4 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200" style="background: var(--primary);">
-                          Ver Detalles
-                        </a>
+                      <p class="text-gray-600 line-clamp-1 md:line-clamp-2 mb-4">${property.description || 'Descripción no disponible'}</p>
+                    </a>
+                    <div class="flex items-center justify-between">
+                      <div class="text-2xl font-bold" style="color: var(--primary);">
+                        ${new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(Number(property.price||0))}
                       </div>
+                      <a href="/propiedad/${property.id}" class="px-5 py-3 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 btn-primary">
+                        Ver Detalles
+                      </a>
                     </div>
                   </div>
                 </article>
               `;
             }).join('');
+
+            // Activar reveal en nuevas tarjetas
+            if (!prefersReducedMotion && revealObserver) {
+              favoritesContainer.querySelectorAll('.reveal').forEach((el) => revealObserver!.observe(el));
+            } else {
+              favoritesContainer.querySelectorAll('.reveal').forEach((el) => el.classList.add('is-visible'));
+            }
           }
+          // Ocultar skeletons de carga
+          if (loadingState) loadingState.classList.add('hidden');
         }
       } catch (error) {
         console.error('Error loading favorites:', error);
@@ -370,7 +423,8 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
     let currentPropertyId = '';
     let currentPropertyTitle = '';
 
-    function showInquiryModal(propertyId: string, propertyTitle: string) {
+    // Exponer funciones globalmente para atributos onclick
+    (window as any).showInquiryModal = function(propertyId: string, propertyTitle: string) {
       currentPropertyId = propertyId;
       currentPropertyTitle = propertyTitle;
       const propertyIdElement = document.getElementById('propertyId') as HTMLInputElement;
@@ -380,9 +434,9 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
         inquiryModal.classList.remove('hidden');
         inquiryModal.classList.add('flex');
       }
-    }
+    };
 
-    function closeInquiryModal() {
+    (window as any).closeInquiryModal = function() {
       const inquiryModal = document.getElementById('inquiryModal');
       const inquiryForm = document.getElementById('inquiryForm') as HTMLFormElement;
       if (inquiryModal) {
@@ -392,9 +446,10 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
       if (inquiryForm) {
         inquiryForm.reset();
       }
-    }
+    };
 
-    async function submitInquiry(event: Event) {
+    // Exponer submitInquiry globalmente para que funcione desde onsubmit
+    (window as any).submitInquiry = async function(event: Event) {
       event.preventDefault();
       const form = event.target as HTMLFormElement;
       const formData = new FormData(form);
@@ -408,26 +463,43 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
         });
 
         if (response.ok) {
-          alert('¡Consulta enviada correctamente! Te contactaremos pronto.');
-          closeInquiryModal();
+          const result = await response.json().catch(() => ({}));
+          alert(result.message || '¡Consulta enviada correctamente! Te contactaremos pronto.');
+          (window as any).closeInquiryModal();
         } else {
-          throw new Error('Error al enviar la consulta');
+          // Intentar obtener el mensaje de error del servidor
+          let errorMessage = 'Error al enviar la consulta. Inténtalo de nuevo.';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorData.message || errorMessage;
+            console.error('Error del servidor:', errorData);
+          } catch (e) {
+            // Si no se puede parsear el JSON, usar el status text
+            errorMessage = response.statusText || errorMessage;
+            console.error('Error parseando respuesta:', e);
+          }
+          alert(errorMessage);
+          console.error('Error completo en submitInquiry:', {
+            status: response.status,
+            statusText: response.statusText,
+            message: errorMessage
+          });
         }
       } catch (error) {
-        alert('Error al enviar la consulta. Inténtalo de nuevo.');
-        console.error(error);
+        console.error('Error en submitInquiry (catch):', error);
+        alert('Error al enviar la consulta. Por favor, verifica tu conexión e inténtalo de nuevo.');
       }
-    }
+    };
 
-    // Cerrar modal al hacer clic fuera
-    const inquiryModal = document.getElementById('inquiryModal');
-    if (inquiryModal) {
-      inquiryModal.addEventListener('click', (e) => {
-        if ((e.target as HTMLElement).id === 'inquiryModal') {
-          closeInquiryModal();
-        }
-      });
-    }
+      // Cerrar modal al hacer clic fuera
+      const inquiryModal = document.getElementById('inquiryModal');
+      if (inquiryModal) {
+        inquiryModal.addEventListener('click', (e) => {
+          if ((e.target as HTMLElement).id === 'inquiryModal') {
+            (window as any).closeInquiryModal();
+          }
+        });
+      }
 
     // Callback para cuando se elimina un favorito
     (window as any).onFavoriteToggle = async (propertyId: string, isFavorite: boolean) => {

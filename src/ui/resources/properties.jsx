@@ -15,12 +15,14 @@ import {
   Empty,
   Spin,
   Popconfirm,
+  Alert,
 } from 'antd';
 import { getSupabaseClient } from '../../lib/supabase-client';
 
 const bucket = 'properties';
 
 async function uploadFiles(fileList, sortOrderStart = 0) {
+  // Llamar getSupabaseClient dentro de la función, no en el nivel del módulo
   const supabase = getSupabaseClient();
   const uploads = [];
   for (const f of fileList) {
@@ -35,12 +37,101 @@ async function uploadFiles(fileList, sortOrderStart = 0) {
 }
 
 export const PropertiesList = () => {
-  const { tableProps } = useTable({
+  const { tableProps, refetch } = useTable({
     resource: 'properties',
     dataProviderName: 'default',
     syncWithLocation: true,
   });
   
+  const handleDelete = async (propertyId, propertyRecord) => {
+    try {
+      const supabase = getSupabaseClient();
+      
+      // Obtener las imágenes de la propiedad
+      const { data: images } = await supabase
+        .from('property_images')
+        .select('url')
+        .eq('property_id', propertyId);
+      
+      // Eliminar las imágenes del storage
+      if (images && images.length > 0) {
+        const bucket = 'properties';
+        const filePaths = images
+          .map(img => img.url)
+          .map(url => {
+            // Extraer el path del URL de Supabase
+            const patterns = [
+              /\/storage\/v1\/object\/public\/properties\/(.+)$/,
+              /\/properties\/(.+)$/
+            ];
+            
+            for (const pattern of patterns) {
+              const match = url.match(pattern);
+              if (match) return match[1];
+            }
+            
+            const segments = url.split('/');
+            return segments[segments.length - 1] || null;
+          })
+          .filter(Boolean);
+        
+        if (filePaths.length > 0) {
+          const { error: storageError } = await supabase.storage.from(bucket).remove(filePaths);
+          if (storageError) {
+            console.warn('Error eliminando archivos del storage (continuando con la eliminación de BD):', storageError);
+          }
+        }
+      }
+      
+      // Eliminar las referencias de imágenes en la BD
+      await supabase
+        .from('property_images')
+        .delete()
+        .eq('property_id', propertyId);
+      
+      // Eliminar las consultas relacionadas
+      await supabase
+        .from('inquiries')
+        .delete()
+        .eq('property_id', propertyId);
+      
+      // Eliminar los favoritos relacionados
+      await supabase
+        .from('favorites')
+        .delete()
+        .eq('property_id', propertyId);
+      
+      // Eliminar la propiedad usando Supabase directamente (para asegurar que se elimine)
+      const { error: deleteError } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', propertyId);
+      
+      if (deleteError) throw deleteError;
+      
+      message.success('Propiedad eliminada correctamente');
+      
+      // Recargar la tabla inmediatamente
+      // Usar setTimeout para asegurar que el mensaje se muestre antes de recargar
+      setTimeout(async () => {
+        // Primero intentar refetch
+        if (refetch) {
+          try {
+            await refetch();
+          } catch (refetchError) {
+            console.warn('Error al recargar con refetch, recargando página:', refetchError);
+            window.location.reload();
+          }
+        } else {
+          // Si no hay refetch, recargar la página
+          window.location.reload();
+        }
+      }, 300);
+    } catch (error) {
+      console.error('Error eliminando propiedad:', error);
+      message.error('Error al eliminar la propiedad: ' + (error.message || error));
+    }
+  };
   
   return (
     <div>
@@ -86,85 +177,9 @@ export const PropertiesList = () => {
                 okText="Eliminar"
                 cancelText="Cancelar"
                 okButtonProps={{ danger: true }}
-                onConfirm={async () => {
-                  try {
-                    const supabase = getSupabaseClient();
-                    
-                    // Obtener las imágenes de la propiedad
-                    const { data: images } = await supabase
-                      .from('property_images')
-                      .select('url')
-                      .eq('property_id', r.id);
-                    
-                    // Eliminar las imágenes del storage
-                    if (images && images.length > 0) {
-                      const bucket = 'properties';
-                      const filePaths = images
-                        .map(img => img.url)
-                        .map(url => {
-                          // Extraer el path del URL de Supabase
-                          // Soporta diferentes formatos de URL de Supabase
-                          const patterns = [
-                            /\/storage\/v1\/object\/public\/properties\/(.+)$/,
-                            /\/properties\/(.+)$/
-                          ];
-                          
-                          for (const pattern of patterns) {
-                            const match = url.match(pattern);
-                            if (match) return match[1];
-                          }
-                          
-                          // Si no coincide con ningún patrón, tomar el último segmento después de '/'
-                          const segments = url.split('/');
-                          return segments[segments.length - 1] || null;
-                        })
-                        .filter(Boolean);
-                      
-                      if (filePaths.length > 0) {
-                        const { error: storageError } = await supabase.storage.from(bucket).remove(filePaths);
-                        if (storageError) {
-                          console.warn('Error eliminando archivos del storage (continuando con la eliminación de BD):', storageError);
-                          // No lanzamos el error, solo lo registramos, ya que los datos ya están eliminados
-                        }
-                      }
-                    }
-                    
-                    // Eliminar las referencias de imágenes en la BD
-                    await supabase
-                      .from('property_images')
-                      .delete()
-                      .eq('property_id', r.id);
-                    
-                    // Eliminar las consultas relacionadas
-                    await supabase
-                      .from('inquiries')
-                      .delete()
-                      .eq('property_id', r.id);
-                    
-                    // Eliminar los favoritos relacionados
-                    await supabase
-                      .from('favorites')
-                      .delete()
-                      .eq('property_id', r.id);
-                    
-                    // Finalmente, eliminar la propiedad
-                    const { error } = await supabase
-                      .from('properties')
-                      .delete()
-                      .eq('id', r.id);
-                    
-                    if (error) throw error;
-                    
-                    message.success('Propiedad eliminada correctamente');
-                    // Recargar la tabla
-                    window.location.reload();
-                  } catch (error) {
-                    console.error('Error eliminando propiedad:', error);
-                    message.error('Error al eliminar la propiedad: ' + (error.message || error));
-                  }
-                }}
+                onConfirm={() => handleDelete(r.id, r)}
               >
-                <Button size="small" danger>
+                <Button size="small" danger type="button">
                   Eliminar
                 </Button>
               </Popconfirm>
@@ -355,6 +370,10 @@ export const PropertiesCreate = () => {
       }
 
       message.success('Vivienda creada');
+      // Redirigir a la lista después de crear
+      setTimeout(() => {
+        window.location.hash = '#/properties';
+      }, 500);
     } catch (e) {
       console.error('Error creating property', e);
       message.error(String(e.message || e));
@@ -372,10 +391,15 @@ export const PropertiesCreate = () => {
   );
 };
 
-export const PropertiesEdit = () => {
+export const PropertiesEdit = ({ id: propId }) => {
+  // Extraer el ID de la URL si no se pasa como prop
+  const hashMatch = typeof window !== 'undefined' ? window.location.hash.match(/#\/properties\/edit\/(.+)/) : null;
+  const extractedId = propId || (hashMatch ? hashMatch[1] : null);
+  
   const { form, queryResult, onFinish } = useForm({ 
     resource: 'properties', 
     action: 'edit',
+    id: extractedId,
     redirect: false // Deshabilitar redirect automático
   });
   const record = queryResult?.data?.data;
@@ -434,6 +458,10 @@ export const PropertiesEdit = () => {
       }
 
       message.success('Vivienda actualizada');
+      // Redirigir a la lista después de actualizar
+      setTimeout(() => {
+        window.location.hash = '#/properties';
+      }, 500);
     } catch (e) {
       console.error('Error updating property', e);
       message.error(String(e.message || e));
@@ -448,8 +476,37 @@ export const PropertiesEdit = () => {
     );
   }
 
+  if (queryResult?.isError) {
+    return (
+      <div style={{ padding: '24px' }}>
+        <Alert
+          message="Error al cargar la vivienda"
+          description={queryResult?.error?.message || 'No se pudo cargar la propiedad. Verifica que el ID sea correcto.'}
+          type="error"
+          showIcon
+          action={
+            <Button onClick={() => window.location.hash = '#/properties'}>
+              Volver a la lista
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
   if (!record) {
-    return <Empty description="No se encontró la vivienda" />;
+    return (
+      <div style={{ padding: '24px' }}>
+        <Empty 
+          description="No se encontró la vivienda"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        >
+          <Button onClick={() => window.location.hash = '#/properties'}>
+            Volver a la lista
+          </Button>
+        </Empty>
+      </div>
+    );
   }
 
   return (

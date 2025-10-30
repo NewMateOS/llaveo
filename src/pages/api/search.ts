@@ -93,8 +93,37 @@ export const GET: APIRoute = async ({ request }) => {
     }
     
     if (q) {
-      // Escapar caracteres especiales para ilike
-      const escapedQ = q.replace(/[%_\\]/g, '\\$&');
+      // Escapar caracteres especiales para PostgreSQL ilike
+      // En PostgreSQL ilike, % y _ son wildcards, y \ es el carácter de escape por defecto
+      // Para buscar caracteres literales en SQL necesitamos:
+      //   - % literal: \% en SQL
+      //   - _ literal: \_ en SQL
+      //   - \ literal: \\ en SQL (dos backslashes representan uno literal)
+      //
+      // Cuando construimos la cadena en JavaScript:
+      //   - Para producir '\%' en SQL: escribimos '\\%' en JS (un backslash escapado seguido de %)
+      //   - Para producir '\_' en SQL: escribimos '\\_' en JS (un backslash escapado seguido de _)
+      //   - Para producir '\\' en SQL: escribimos '\\\\' en JS (dos backslashes escapados)
+      //
+      // IMPORTANTE: Supabase/PostgREST interpreta la cadena del template literal directamente
+      // Para PostgreSQL ilike, necesitamos un solo backslash antes de cada carácter especial
+      // 
+      // En template literals: ${escapedQ} inserta el valor de la variable
+      // Si escapedQ = '100\\%', la cadena final contendrá '100\%' (un backslash + %)
+      //
+      // Para escapar correctamente:
+      // - % literal: necesitamos '\%' en la cadena → en JS escribimos '\\%' (un backslash escapado)
+      // - _ literal: necesitamos '\_' en la cadena → en JS escribimos '\\_' (un backslash escapado)
+      // - \ literal: necesitamos '\\' en la cadena → en JS escribimos '\\\\' (dos backslashes, que PostgreSQL interpreta como uno)
+      //
+      // Orden CRÍTICO: primero backslashes para evitar interferencias con los siguientes reemplazos
+      // PostgreSQL ilike requiere UN solo backslash para escapar %, _, y \
+      // En JavaScript strings: '\\' en el código produce '\' (un backslash) en la cadena
+      // Para producir '\' en la cadena final para PostgreSQL, necesitamos '\\' en JS
+      const escapedQ = q
+        .replace(/\\/g, '\\\\')  // Backslashes literales: cada \ → \\ (dos backslashes en SQL = uno literal)
+        .replace(/%/g, '\\%')    // Porcentajes: cada % → \% (un backslash + % en SQL)
+        .replace(/_/g, '\\_');   // Guiones bajos: cada _ → \_ (un backslash + _ en SQL)
       query = query.or(`title.ilike.%${escapedQ}%,address.ilike.%${escapedQ}%,description.ilike.%${escapedQ}%,city.ilike.%${escapedQ}%`);
     }
 
