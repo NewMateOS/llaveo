@@ -1,6 +1,5 @@
 import type { AstroCookies } from 'astro';
 import { getSupabaseServerClient } from './supabase-server';
-import { applySecurityHeaders } from './security';
 
 export interface MiddlewareOptions {
   requireAuth?: boolean;
@@ -106,25 +105,3 @@ export async function securityMiddleware(
   }
 }
 
-export function createSecureResponse(data: any, status: number = 200): Response {
-  const response = new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    }
-  });
-
-  return applySecurityHeaders(response, false);
-}
-
-export function createRedirectResponse(url: string, status: number = 302): Response {
-  const response = new Response(null, {
-    status,
-    headers: { 'Location': url }
-  });
-
-  return applySecurityHeaders(response, false);
-}

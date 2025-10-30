@@ -14,10 +14,10 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
       <div class="max-w-7xl mx-auto px-6 py-4">
         <div class="flex justify-between items-center">
           <a href="/" class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style="background: var(--primary);">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm bg-token-primary">
               <span class="text-white font-bold text-lg">L</span>
             </div>
-            <div class="text-2xl font-bold" style="color: var(--text-primary);">{brand}</div>
+            <div class="text-2xl font-bold text-token-primary">{brand}</div>
           </a>
           <a href="/" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors duration-200">
             Volver
@@ -29,7 +29,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
     <!-- Main Content -->
     <main class="max-w-4xl mx-auto px-6 py-12">
       <article class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 md:p-12">
-        <h1 class="text-4xl font-bold mb-8" style="color: var(--text-primary);">Política de Cookies</h1>
+        <h1 class="text-4xl font-bold mb-8 text-token-primary">Política de Cookies</h1>
         
         <div class="text-sm text-gray-500 mb-8">
           <p>Última actualización: {new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
@@ -37,32 +37,32 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
 
         <div class="prose max-w-none space-y-8">
           <section>
-            <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">¿Qué son las Cookies?</h2>
+            <h2 class="text-2xl font-semibold mb-4 text-token-primary">¿Qué son las Cookies?</h2>
             <p class="text-gray-700 leading-relaxed">
               Las cookies son pequeños archivos de texto que se almacenan en su dispositivo cuando visita un sitio web. Nos ayudan a proporcionar, proteger y mejorar nuestros servicios.
             </p>
           </section>
 
           <section>
-            <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">Tipos de Cookies que Utilizamos</h2>
+            <h2 class="text-2xl font-semibold mb-4 text-token-primary">Tipos de Cookies que Utilizamos</h2>
             
             <div class="space-y-6">
               <div>
-                <h3 class="text-xl font-semibold mb-2" style="color: var(--text-primary);">Cookies Esenciales</h3>
+                <h3 class="text-xl font-semibold mb-2 text-token-primary">Cookies Esenciales</h3>
                 <p class="text-gray-700 leading-relaxed">
                   Estas cookies son necesarias para el funcionamiento básico del sitio web. Permiten la navegación y el uso de funciones esenciales como el acceso a áreas seguras.
                 </p>
               </div>
 
               <div>
-                <h3 class="text-xl font-semibold mb-2" style="color: var(--text-primary);">Cookies de Funcionalidad</h3>
+                <h3 class="text-xl font-semibold mb-2 text-token-primary">Cookies de Funcionalidad</h3>
                 <p class="text-gray-700 leading-relaxed">
                   Estas cookies permiten que el sitio web recuerde sus preferencias y proporciona características mejoradas y personalizadas.
                 </p>
               </div>
 
               <div>
-                <h3 class="text-xl font-semibold mb-2" style="color: var(--text-primary);">Cookies de Análisis</h3>
+                <h3 class="text-xl font-semibold mb-2 text-token-primary">Cookies de Análisis</h3>
                 <p class="text-gray-700 leading-relaxed">
                   Estas cookies nos ayudan a entender cómo los visitantes interactúan con nuestro sitio web recopilando información de forma anónima.
                 </p>
@@ -71,7 +71,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
           </section>
 
           <section>
-            <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">Gestión de Cookies</h2>
+            <h2 class="text-2xl font-semibold mb-4 text-token-primary">Gestión de Cookies</h2>
             <p class="text-gray-700 leading-relaxed">
               Puede controlar y/o eliminar las cookies como desee. Puede eliminar todas las cookies que ya están en su dispositivo y puede configurar la mayoría de los navegadores para evitar que se coloquen.
             </p>
@@ -81,21 +81,21 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
           </section>
 
           <section>
-            <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">Cookies de Terceros</h2>
+            <h2 class="text-2xl font-semibold mb-4 text-token-primary">Cookies de Terceros</h2>
             <p class="text-gray-700 leading-relaxed">
               Algunas cookies pueden ser establecidas por servicios externos que aparecen en nuestras páginas. No tenemos control sobre estas cookies.
             </p>
           </section>
 
           <section>
-            <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">Más Información</h2>
+            <h2 class="text-2xl font-semibold mb-4 text-token-primary">Más Información</h2>
             <p class="text-gray-700 leading-relaxed">
               Para obtener más información sobre cómo gestionar las cookies, visite <a href="https://www.allaboutcookies.org" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">www.allaboutcookies.org</a>.
             </p>
           </section>
 
           <section>
-            <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">Contacto</h2>
+            <h2 class="text-2xl font-semibold mb-4 text-token-primary">Contacto</h2>
             <p class="text-gray-700 leading-relaxed">
               Si tiene preguntas sobre nuestra política de cookies, puede contactarnos en:
             </p>

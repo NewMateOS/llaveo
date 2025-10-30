@@ -9,17 +9,16 @@ export interface Props {
 const { propertyId, isFavorite = false, onToggle } = Astro.props;
 ---
 
-<button 
+<button
   id={`favorite-btn-${propertyId}`}
-  class="favorite-btn group flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-200 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
+  class:list={{
+    'favorite-btn group flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-200 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 border-token-primary': true,
+    'bg-token-primary text-white': isFavorite,
+    'bg-transparent text-token-brand': !isFavorite,
+  }}
   data-property-id={propertyId}
   data-is-favorite={isFavorite}
   aria-pressed={isFavorite}
-  style={`
-    background: ${isFavorite ? 'var(--primary)' : 'transparent'};
-    border-color: var(--primary);
-    color: ${isFavorite ? 'white' : 'var(--primary)'};
-  `}
   onclick={`toggleFavorite('${propertyId}')`}
   title={isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
 >
@@ -38,7 +37,7 @@ const { propertyId, isFavorite = false, onToggle } = Astro.props;
   </svg>
 </button>
 
-<script>
+<script nonce={Astro.locals.cspNonce}>
   import { getSupabaseClient } from '../lib/supabase-client.js';
 
   // Estado global de favoritos
@@ -161,8 +160,10 @@ const { propertyId, isFavorite = false, onToggle } = Astro.props;
     button.title = isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos';
 
     // Actualizar estilos
-    button.style.background = isFavorite ? 'var(--primary)' : 'transparent';
-    button.style.color = isFavorite ? 'white' : 'var(--primary)';
+    button.classList.toggle('bg-token-primary', isFavorite);
+    button.classList.toggle('text-white', isFavorite);
+    button.classList.toggle('bg-transparent', !isFavorite);
+    button.classList.toggle('text-token-brand', !isFavorite);
 
     // Actualizar SVG
     const svg = button.querySelector('svg');

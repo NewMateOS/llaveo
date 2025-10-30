@@ -97,9 +97,9 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
       <div class="mb-6 md:mb-8 reveal">
         <div class="flex items-start justify-between mb-4">
           <div>
-            <h1 class="text-4xl font-bold mb-2 line-clamp-2 md:line-clamp-3" style="color: var(--text-primary);">{property.title}</h1>
+            <h1 class="text-4xl font-bold mb-2 line-clamp-2 md:line-clamp-3 text-token-primary">{property.title}</h1>
             <div class="flex items-center text-gray-600 mb-4">
-              <svg class="w-5 h-5 mr-2" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-5 h-5 mr-2 text-token-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
               </svg>
@@ -108,14 +108,14 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
           </div>
           
           <!-- Status Badge -->
-          <div class="px-4 py-2 rounded-full text-sm font-medium text-white shadow-sm badge-soft" style="background: color-mix(in srgb, var(--primary) 85%, #fff); color: #fff; border: none;">
+          <div class="px-4 py-2 rounded-full text-sm font-medium text-white shadow-sm badge-soft badge-accent">
             {property.status === 'venta' ? 'Venta' : 'Alquiler'}
           </div>
         </div>
         
         <!-- Price and Favorite -->
         <div class="flex items-center justify-between mb-6">
-          <div class="text-4xl font-bold" style="color: var(--primary);">
+          <div class="text-4xl font-bold text-token-brand">
             {new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(Number(property.price||0))}
           </div>
           <FavoriteButton propertyId={property.id} />
@@ -138,52 +138,52 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
           <!-- Description -->
           {property.description && (
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 reveal">
-              <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">Descripción</h2>
+              <h2 class="text-2xl font-semibold mb-4 text-token-primary">Descripción</h2>
               <p class="text-gray-700 leading-relaxed text-lg">{property.description}</p>
             </div>
           )}
 
           <!-- Features Grid -->
           <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 reveal">
-            <h2 class="text-2xl font-semibold mb-6" style="color: var(--text-primary);">Características</h2>
+            <h2 class="text-2xl font-semibold mb-6 text-token-primary">Características</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div class="text-center p-4 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                <div class="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3 shadow-sm" style="background: var(--primary);">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3 shadow-sm bg-token-primary">
                   <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
                   </svg>
                 </div>
-                <div class="text-2xl font-bold" style="color: var(--text-primary);">{property.rooms}</div>
+                <div class="text-2xl font-bold text-token-primary">{property.rooms}</div>
                 <div class="text-sm text-gray-600">Habitaciones</div>
               </div>
               
               <div class="text-center p-4 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                <div class="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3 shadow-sm" style="background: var(--primary);">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3 shadow-sm bg-token-primary">
                   <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"></path>
                   </svg>
                 </div>
-                <div class="text-2xl font-bold" style="color: var(--text-primary);">{property.baths}</div>
+                <div class="text-2xl font-bold text-token-primary">{property.baths}</div>
                 <div class="text-sm text-gray-600">Baños</div>
               </div>
               
               <div class="text-center p-4 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                <div class="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3 shadow-sm" style="background: var(--primary);">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3 shadow-sm bg-token-primary">
                   <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
                   </svg>
                 </div>
-                <div class="text-2xl font-bold" style="color: var(--text-primary);">{property.area_m2}</div>
+                <div class="text-2xl font-bold text-token-primary">{property.area_m2}</div>
                 <div class="text-sm text-gray-600">m²</div>
               </div>
               
               <div class="text-center p-4 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                <div class="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3 shadow-sm" style="background: var(--primary);">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3 shadow-sm bg-token-primary">
                   <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
                 </div>
-                <div class="text-lg font-bold" style="color: var(--text-primary);">{property.status === 'venta' ? 'Venta' : 'Alquiler'}</div>
+                <div class="text-lg font-bold text-token-primary">{property.status === 'venta' ? 'Venta' : 'Alquiler'}</div>
                 <div class="text-sm text-gray-600">Estado</div>
               </div>
             </div>
@@ -192,7 +192,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
           <!-- Image Gallery -->
           {property.property_images && property.property_images.length > 1 && (
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 reveal">
-              <h2 class="text-2xl font-semibold mb-6" style="color: var(--text-primary);">Galería de imágenes</h2>
+              <h2 class="text-2xl font-semibold mb-6 text-token-primary">Galería de imágenes</h2>
               <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {property.property_images.slice(1).map((img) => (
                   <div class="relative overflow-hidden rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-200">
@@ -212,7 +212,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
         <!-- Right Sidebar -->
         <div class="lg:col-span-1">
           <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-24 reveal">
-            <h3 class="text-lg font-semibold mb-6" style="color: var(--text-primary);">Contactar</h3>
+            <h3 class="text-lg font-semibold mb-6 text-token-primary">Contactar</h3>
             
             <button 
               class="w-full py-3 px-4 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 mb-6 btn-primary"
@@ -230,7 +230,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
                   </svg>
                 </div>
                 <div>
-                  <div class="font-medium" style="color: var(--text-primary);">Dirección</div>
+                  <div class="font-medium text-token-primary">Dirección</div>
                   <div class="text-gray-600">{property.address}</div>
                 </div>
               </div>
@@ -242,7 +242,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
                   </svg>
                 </div>
                 <div>
-                  <div class="font-medium" style="color: var(--text-primary);">Ciudad</div>
+                  <div class="font-medium text-token-primary">Ciudad</div>
                   <div class="text-gray-600">{property.city}</div>
                 </div>
               </div>
@@ -254,7 +254,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
                   </svg>
                 </div>
                 <div>
-                  <div class="font-medium" style="color: var(--text-primary);">Publicado</div>
+                  <div class="font-medium text-token-primary">Publicado</div>
                   <div class="text-gray-600">{new Date(property.created_at).toLocaleDateString('es-ES')}</div>
                 </div>
               </div>
@@ -270,7 +270,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
         <!-- Modal Header -->
         <div class="px-6 py-4 border-b border-gray-100">
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold" style="color: var(--text-primary);">Consultar sobre esta propiedad</h3>
+            <h3 class="text-lg font-semibold text-token-primary">Consultar sobre esta propiedad</h3>
             <button 
               onclick="closeInquiryModal()"
               class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors duration-200 focus-ring"
@@ -288,7 +288,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
           
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Nombre *</label>
+              <label class="block text-sm font-medium mb-2 text-token-primary">Nombre *</label>
               <input 
                 type="text" 
                 name="name" 
@@ -298,7 +298,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
             </div>
             
             <div>
-              <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Email *</label>
+              <label class="block text-sm font-medium mb-2 text-token-primary">Email *</label>
               <input 
                 type="email" 
                 name="email" 
@@ -308,7 +308,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
             </div>
             
             <div>
-              <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Teléfono</label>
+              <label class="block text-sm font-medium mb-2 text-token-primary">Teléfono</label>
               <input 
                 type="tel" 
                 name="phone" 
@@ -317,7 +317,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
             </div>
             
             <div>
-              <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Mensaje</label>
+              <label class="block text-sm font-medium mb-2 text-token-primary">Mensaje</label>
               <textarea 
                 name="message" 
                 rows="4" 
@@ -362,7 +362,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
       </div>
     </div>
 
-    <script>
+    <script nonce={Astro.locals.cspNonce}>
       // Header elevated on scroll
       const headerEl = document.querySelector('header.app-header');
       const elevateHeader = () => {

@@ -74,31 +74,31 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
           
           <!-- Navigation -->
           <nav class="hidden md:flex gap-1 items-center">
-            <a href="/resultados" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100 link-underline" style="color: var(--text-secondary);">
+            <a href="/resultados" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100 link-underline text-token-secondary">
               Propiedades
             </a>
-            <a href="/favoritos" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100 link-underline" style="color: var(--text-secondary);">
+            <a href="/favoritos" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100 link-underline text-token-secondary">
               Favoritos
             </a>
-            <a href="#servicios" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100 link-underline" style="color: var(--text-secondary);">
+            <a href="#servicios" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100 link-underline text-token-secondary">
               Servicios
             </a>
-            <a href="#contacto" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100 link-underline" style="color: var(--text-secondary);">
+            <a href="#contacto" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:bg-gray-100 link-underline text-token-secondary">
               Contacto
             </a>
             
             <!-- User Section (will be populated by JavaScript) -->
             <div id="user-section" class="ml-2 flex items-center gap-3">
               <!-- Login Button (shown when not logged in) -->
-              <button id="login-btn" onclick="showLoginModal()" class="px-6 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+              <button id="login-btn" onclick="showLoginModal()" class="px-6 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 bg-token-primary-gradient">
                 Login
               </button>
               
               <!-- User Info (shown when logged in) -->
               <div id="user-info" class="hidden flex items-center gap-3">
                 <div class="flex items-center gap-2">
-                  <img id="user-avatar" src="" alt="User" class="w-8 h-8 rounded-full border-2 border-gray-200" style="border-color: var(--primary);">
-                  <span id="user-name" class="text-sm font-medium" style="color: var(--text-primary);"></span>
+                  <img id="user-avatar" src="" alt="User" class="w-8 h-8 rounded-full border-2 border-gray-200 border-token-primary">
+                  <span id="user-name" class="text-sm font-medium text-token-primary"></span>
                 </div>
                 <button onclick="handleLogout()" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors duration-200">
                   Salir
@@ -109,10 +109,10 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
           
           <!-- Mobile Menu Button -->
           <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200" aria-label="Menú móvil">
-            <svg id="menu-icon" class="w-6 h-6" style="color: var(--text-secondary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg id="menu-icon" class="w-6 h-6 text-token-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
-            <svg id="close-icon" class="w-6 h-6 hidden" style="color: var(--text-secondary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg id="close-icon" class="w-6 h-6 hidden text-token-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>
@@ -120,20 +120,20 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
           <!-- Mobile Menu -->
           <div id="mobile-menu" class="hidden md:hidden absolute top-full left-0 right-0 bg-white border-t border-gray-100 shadow-lg z-50">
             <nav class="flex flex-col p-4 space-y-2">
-              <a href="/resultados" class="px-4 py-2 rounded-lg text-base font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
+              <a href="/resultados" class="px-4 py-2 rounded-lg text-base font-medium transition-colors duration-200 hover:bg-gray-100 text-token-secondary">
                 Propiedades
               </a>
-              <a href="/favoritos" class="px-4 py-2 rounded-lg text-base font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
+              <a href="/favoritos" class="px-4 py-2 rounded-lg text-base font-medium transition-colors duration-200 hover:bg-gray-100 text-token-secondary">
                 Favoritos
               </a>
-              <a href="#servicios" class="px-4 py-2 rounded-lg text-base font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
+              <a href="#servicios" class="px-4 py-2 rounded-lg text-base font-medium transition-colors duration-200 hover:bg-gray-100 text-token-secondary">
                 Servicios
               </a>
-              <a href="#contacto" class="px-4 py-2 rounded-lg text-base font-medium transition-colors duration-200 hover:bg-gray-100" style="color: var(--text-secondary);">
+              <a href="#contacto" class="px-4 py-2 rounded-lg text-base font-medium transition-colors duration-200 hover:bg-gray-100 text-token-secondary">
                 Contacto
               </a>
               <div class="pt-4 border-t border-gray-100">
-                <button id="mobile-login-btn" onclick="showLoginModal()" class="w-full px-6 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+                <button id="mobile-login-btn" onclick="showLoginModal()" class="w-full px-6 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 bg-token-primary-gradient">
                   Login
                 </button>
               </div>
@@ -144,25 +144,25 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
     </header>
 
     <!-- Hero Section - Buscador centrado a pantalla completa -->
-    <section id="hero" class="relative min-h-[calc(100vh-72px)] flex items-center justify-center overflow-hidden" style="background: #ffffff;">
-      <canvas id="hero-blob" class="absolute inset-0 w-full h-full" style="pointer-events: none; display: block;"></canvas>
+    <section id="hero" class="relative min-h-[calc(100vh-72px)] flex items-center justify-center overflow-hidden bg-white">
+      <canvas id="hero-blob" class="absolute inset-0 w-full h-full pointer-events-none block"></canvas>
       <div class="relative w-full px-6">
         <div class="max-w-4xl mx-auto">
-          <div class="text-center mb-8 reveal" style="transition-delay: 60ms;">
+          <div class="text-center mb-8 reveal delay-60ms">
             <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 border border-gray-100 shadow-sm mb-4">
-              <div class="w-2 h-2 rounded-full" data-blob-react-bg="brand" style="background: var(--primary);"></div>
-              <span class="text-xs font-medium" style="color: var(--text-secondary);">Encuentra tu próximo hogar</span>
+              <div class="w-2 h-2 rounded-full" data-blob-react-bg="brand"></div>
+              <span class="text-xs font-medium text-token-secondary">Encuentra tu próximo hogar</span>
             </div>
-            <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-3" style="color: var(--text-primary);">
+            <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-3 text-token-primary">
               Búsqueda <span id="smart-word" class="gradient-text" data-blob-react="brand">inteligente</span> de viviendas
             </h1>
-            <p class="text-base md:text-lg max-w-2xl mx-auto" style="color: var(--text-secondary);">
+            <p class="text-base md:text-lg max-w-2xl mx-auto text-token-secondary">
               Filtra por ciudad, precio y características. Rápido, claro y centrado en ti.
             </p>
           </div>
           <SearchBar value={q} city="" status="" minRooms="" minPrice="" maxPrice="" />
           <!-- Hero CTAs -->
-          <div class="mt-6 flex justify-center reveal" style="transition-delay: 220ms;">
+          <div class="mt-6 flex justify-center reveal delay-220ms">
             <a href="/resultados" class="px-6 py-3 rounded-xl text-base font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 btn-primary focus-ring inline-flex items-center justify-center">
               Explorar propiedades
             </a>
@@ -179,10 +179,10 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
       </div>
     </section>
     <!-- Sección destino del scroll -->
-    <section id="destacadas" data-home-after-hero class="max-w-7xl mx-auto px-6 py-16 md:py-24" style="background: transparent;">
+    <section id="destacadas" data-home-after-hero class="max-w-7xl mx-auto px-6 py-16 md:py-24 bg-transparent">
       <div class="text-center mb-8 reveal">
-        <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-3" style="color: var(--text-primary);">Propiedades destacadas</h2>
-        <p class="text-base md:text-lg" style="color: var(--text-secondary);">Explora una selección curada mientras ajustas tu búsqueda.</p>
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-3 text-token-primary">Propiedades destacadas</h2>
+        <p class="text-base md:text-lg text-token-secondary">Explora una selección curada mientras ajustas tu búsqueda.</p>
       </div>
       <!-- Placeholder de contenido futuro -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
@@ -192,15 +192,15 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
       </div>
     </section>
     <!-- Scroll Down cue -->
-    <button id="scroll-down" aria-label="Desplazar hacia contenido" class="absolute bottom-6 left-1/2 -translate-x-1/2 inline-flex flex-col items-center gap-1 text-sm focus-ring reveal" style="transition-delay: 300ms; z-index: 20;">
-      <span class="px-3 py-1 rounded-full bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm" style="color: var(--text-secondary);">Scroll</span>
+    <button id="scroll-down" aria-label="Desplazar hacia contenido" class="absolute bottom-6 left-1/2 -translate-x-1/2 inline-flex flex-col items-center gap-1 text-sm focus-ring reveal delay-300ms z-20">
+      <span class="px-3 py-1 rounded-full bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm text-token-secondary">Scroll</span>
       <span class="w-9 h-9 rounded-full flex items-center justify-center bg-white/90 shadow-md hover:shadow-lg transition-all duration-200">
         <svg class="w-5 h-5 animate-bounce" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
         </svg>
       </span>
     </button>
-    <script>
+    <script nonce={Astro.locals.cspNonce}>
       const hero = document.getElementById('hero');
       const blobCanvas = document.getElementById('hero-blob') as HTMLCanvasElement | null;
       const reactiveEls = () => Array.from(hero?.querySelectorAll('[data-blob-react="brand"]') || []) as HTMLElement[];
@@ -434,15 +434,15 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
     </script>
 
     <!-- Featured Properties - Material Design -->
-    <section id="propiedades" class="py-32 reveal" style="background: transparent;">
+    <section id="propiedades" class="py-32 reveal bg-transparent">
       <div class="max-w-7xl mx-auto px-6">
         <!-- Section Header -->
         <div class="text-center mb-20">
           <div class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white shadow-sm mb-8">
-            <div class="w-3 h-3 rounded-full" style="background: var(--primary);"></div>
-            <span class="text-base font-medium" style="color: var(--text-secondary);">Propiedades Destacadas</span>
+            <div class="w-3 h-3 rounded-full bg-token-primary"></div>
+            <span class="text-base font-medium text-token-secondary">Propiedades Destacadas</span>
           </div>
-          <h2 class="text-5xl md:text-6xl font-bold mb-6" style="color: var(--text-primary);">Las mejores oportunidades</h2>
+          <h2 class="text-5xl md:text-6xl font-bold mb-6 text-token-primary">Las mejores oportunidades</h2>
           <p class="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
             Descubre las propiedades más exclusivas y mejor valoradas de nuestro catálogo
           </p>
@@ -474,7 +474,7 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
                     <div class="pointer-events-none absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
                     <!-- Status Badge -->
                     <div class="absolute top-6 right-6">
-                      <span class="px-4 py-2 rounded-full text-sm font-medium text-white shadow-sm badge-soft" style="background: color-mix(in srgb, var(--primary) 85%, #fff); color: #fff; border: none;">
+                      <span class="px-4 py-2 rounded-full text-sm font-medium text-white shadow-sm badge-soft badge-accent">
                         {property.status === 'venta' ? 'Venta' : 'Alquiler'}
                       </span>
                     </div>
@@ -484,13 +484,13 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
                   <div class="p-12 lg:w-1/2 flex flex-col justify-between">
                     <div>
                       <a href={`/propiedad/${property.id}`} class="block hover:opacity-80 transition-opacity duration-200">
-                        <h3 class="text-3xl lg:text-4xl font-semibold mb-6 hover:text-primary transition-colors duration-200" style="color: var(--text-primary);">
+                        <h3 class="text-3xl lg:text-4xl font-semibold mb-6 hover:text-primary transition-colors duration-200 text-token-primary">
                           {property.title}
                         </h3>
 
                         <!-- Location -->
                         <div class="flex items-center mb-6 text-gray-600">
-                          <svg class="w-6 h-6 mr-3" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg class="w-6 h-6 mr-3 text-token-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                           </svg>
@@ -531,14 +531,14 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
                     <!-- Price & CTA -->
                     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                       <div>
-                        <div class="text-4xl font-bold" style="color: var(--primary);">
+                        <div class="text-4xl font-bold text-token-brand">
                           {new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(Number(property.price || 0))}
                         </div>
                         {property.created_at && <div class="text-sm text-gray-500 mt-1">Actualizado {new Date(property.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}</div>}
                       </div>
 
                       <div class="flex flex-col sm:flex-row gap-4">
-                        <a href={`/propiedad/${property.id}`} class="inline-flex items-center justify-center px-6 py-3 rounded-lg text-base font-semibold text-white shadow-md hover:shadow-lg transition-all duration-200" style="background: var(--primary);">
+                        <a href={`/propiedad/${property.id}`} class="inline-flex items-center justify-center px-6 py-3 rounded-lg text-base font-semibold text-white shadow-md hover:shadow-lg transition-all duration-200 bg-token-primary">
                           Ver detalles
                         </a>
                         <a href={`/propiedad/${property.id}#contacto`} class="inline-flex items-center justify-center px-6 py-3 rounded-lg text-base font-semibold border border-gray-200 hover:border-primary hover:text-primary transition-colors duration-200">
@@ -553,7 +553,7 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
           </div>
         ) : (
           <div class="max-w-4xl mx-auto bg-white border border-gray-100 rounded-xl shadow-sm p-10 text-center">
-            <h3 class="text-3xl font-semibold mb-4" style="color: var(--text-primary);">Pronto habrá viviendas disponibles</h3>
+            <h3 class="text-3xl font-semibold mb-4 text-token-primary">Pronto habrá viviendas disponibles</h3>
             <p class="text-lg text-gray-600">
               En cuanto publiquemos nuevas propiedades las verás aquí mismo. Vuelve a visitarnos o escríbenos si quieres que te avisemos.
             </p>
@@ -567,10 +567,10 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
         <!-- Section Header - Material Design Typography -->
         <div class="text-center mb-20">
           <div class="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white shadow-sm mb-8 border border-gray-100">
-            <div class="w-3 h-3 rounded-full shadow-sm" style="background: var(--primary);"></div>
-            <span class="text-sm font-medium tracking-wide uppercase" style="color: var(--text-secondary);">Nuestros Servicios</span>
+            <div class="w-3 h-3 rounded-full shadow-sm bg-token-primary"></div>
+            <span class="text-sm font-medium tracking-wide uppercase text-token-secondary">Nuestros Servicios</span>
           </div>
-          <h2 class="text-4xl md:text-5xl font-bold mb-6 leading-tight" style="color: var(--text-primary);">
+          <h2 class="text-4xl md:text-5xl font-bold mb-6 leading-tight text-token-primary">
             Todo lo que necesitas
           </h2>
           <p class="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
@@ -583,12 +583,12 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
           <!-- Service 1 - Material Design Card -->
           <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group tilt-hover">
             <!-- Icon Container - Material Design FAB -->
-            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300 bg-token-primary-gradient">
               <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
             </div>
-            <h3 class="text-xl font-semibold mb-4 leading-tight" style="color: var(--text-primary);">Búsqueda Avanzada</h3>
+            <h3 class="text-xl font-semibold mb-4 leading-tight text-token-primary">Búsqueda Avanzada</h3>
             <p class="text-gray-600 leading-relaxed">
               Filtros inteligentes y búsqueda por ubicación para encontrar exactamente lo que buscas
             </p>
@@ -597,12 +597,12 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
           <!-- Service 2 - Material Design Card -->
           <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group tilt-hover">
             <!-- Icon Container - Material Design FAB -->
-            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300 bg-token-primary-gradient">
               <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
             </div>
-            <h3 class="text-xl font-semibold mb-4 leading-tight" style="color: var(--text-primary);">Información Completa</h3>
+            <h3 class="text-xl font-semibold mb-4 leading-tight text-token-primary">Información Completa</h3>
             <p class="text-gray-600 leading-relaxed">
               Detalles exhaustivos, fotos de alta calidad y datos precisos de cada propiedad
             </p>
@@ -611,12 +611,12 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
           <!-- Service 3 - Material Design Card -->
           <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group tilt-hover">
             <!-- Icon Container - Material Design FAB -->
-            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300 bg-token-primary-gradient">
               <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
               </svg>
             </div>
-            <h3 class="text-xl font-semibold mb-4 leading-tight" style="color: var(--text-primary);">Consultas Directas</h3>
+            <h3 class="text-xl font-semibold mb-4 leading-tight text-token-primary">Consultas Directas</h3>
             <p class="text-gray-600 leading-relaxed">
               Contacta directamente con propietarios y recibe respuestas rápidas
             </p>
@@ -625,12 +625,12 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
           <!-- Service 4 - Material Design Card -->
           <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group tilt-hover">
             <!-- Icon Container - Material Design FAB -->
-            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:shadow-lg transition-shadow duration-300 bg-token-primary-gradient">
               <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
             </div>
-            <h3 class="text-xl font-semibold mb-4 leading-tight" style="color: var(--text-primary);">Actualizaciones</h3>
+            <h3 class="text-xl font-semibold mb-4 leading-tight text-token-primary">Actualizaciones</h3>
             <p class="text-gray-600 leading-relaxed">
               Nuevas propiedades agregadas constantemente para mantenerte al día
             </p>
@@ -645,18 +645,18 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
         <div class="max-w-4xl mx-auto">
           <!-- Badge -->
           <div class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white shadow-sm mb-8">
-            <div class="w-3 h-3 rounded-full" style="background: var(--primary);"></div>
-            <span class="text-base font-medium" style="color: var(--text-secondary);">Tu hogar perfecto te espera</span>
+            <div class="w-3 h-3 rounded-full bg-token-primary"></div>
+            <span class="text-base font-medium text-token-secondary">Tu hogar perfecto te espera</span>
           </div>
           
-          <h2 class="text-5xl md:text-6xl font-bold mb-6" style="color: var(--text-primary);">
+          <h2 class="text-5xl md:text-6xl font-bold mb-6 text-token-primary">
             ¿Listo para encontrar<br>
-            <span style="color: var(--primary);">tu hogar ideal</span>?
+            <span>tu hogar ideal</span>?
           </h2>
           
           <p class="text-xl text-gray-600 mb-12 leading-relaxed">
             Únete a miles de personas que ya encontraron su propiedad perfecta con nosotros.<br>
-            <span class="font-medium" style="color: var(--text-primary);">¡Tu nueva casa está a solo un clic de distancia!</span>
+            <span class="font-medium text-token-primary">¡Tu nueva casa está a solo un clic de distancia!</span>
           </p>
           
           <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -706,7 +706,7 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
           
           <!-- Quick Links -->
           <div>
-            <h3 class="text-sm font-semibold mb-4 uppercase tracking-wide" style="color: var(--text-primary);">Enlaces</h3>
+            <h3 class="text-sm font-semibold mb-4 uppercase tracking-wide text-token-primary">Enlaces</h3>
             <ul class="space-y-3">
               <li><a href="/resultados" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200 link-underline">Todas las propiedades</a></li>
               <li><a href="/admin" class="text-sm text-gray-600 hover:text-primary transition-colors duration-200 link-underline">Panel de administración</a></li>
@@ -717,7 +717,7 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
           
           <!-- Contact Info -->
           <div>
-            <h3 class="text-sm font-semibold mb-4 uppercase tracking-wide" style="color: var(--text-primary);">Contacto</h3>
+            <h3 class="text-sm font-semibold mb-4 uppercase tracking-wide text-token-primary">Contacto</h3>
             <div class="space-y-4">
               <div class="flex items-center gap-3">
                 <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100">
@@ -726,7 +726,7 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
                   </svg>
                 </div>
                 <div>
-                  <div class="text-sm font-medium" style="color: var(--text-primary);">Email</div>
+                  <div class="text-sm font-medium text-token-primary">Email</div>
                   <div class="text-sm text-gray-600">info@{brand.toLowerCase()}.com</div>
                 </div>
               </div>
@@ -738,7 +738,7 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
                   </svg>
                 </div>
                 <div>
-                  <div class="text-sm font-medium" style="color: var(--text-primary);">Teléfono</div>
+                  <div class="text-sm font-medium text-token-primary">Teléfono</div>
                   <div class="text-sm text-gray-600">+34 900 123 456</div>
                 </div>
               </div>
@@ -750,7 +750,7 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
                   </svg>
                 </div>
                 <div>
-                  <div class="text-sm font-medium" style="color: var(--text-primary);">Horario</div>
+                  <div class="text-sm font-medium text-token-primary">Horario</div>
                   <div class="text-sm text-gray-600">Lun-Vie 9:00-18:00</div>
                 </div>
               </div>
@@ -777,7 +777,7 @@ function firstImg(arr: Array<{ url: string; sort_order?: number }> | null | unde
     <!-- Auth Modal Component -->
     <AuthModal />
 
-    <script>
+    <script nonce={Astro.locals.cspNonce}>
       import { getSupabaseClient } from '../lib/supabase-client.js';
 
       const supabase = getSupabaseClient();
