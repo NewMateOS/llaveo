@@ -2,9 +2,11 @@
 // Página de configuración de seguridad para producción
 export const prerender = false;
 
+const nonce = Astro.locals.cspNonce || 'dynamic-nonce';
+
 const securityConfig = {
   headers: {
-    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+    'Content-Security-Policy': `default-src 'self'; script-src 'self' 'nonce-${nonce}' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`,
     'X-Frame-Options': 'DENY',
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -28,7 +30,7 @@ const securityConfig = {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Configuración de Seguridad · LLaveo</title>
-    <style>
+    <style nonce={Astro.locals.cspNonce}>
       body {
         font-family: system-ui, -apple-system, sans-serif;
         line-height: 1.6;
@@ -116,8 +118,8 @@ const securityConfig = {
         <ul>
           <li>Configurar variables de entorno de Supabase</li>
           <li>Habilitar HTTPS en producción</li>
-          <li>Configurar rate limiting con Redis</li>
-          <li>Implementar logging de seguridad</li>
+          <li>Configurar rate limiting con Redis u otro almacén compartido</li>
+          <li>Implementar logging y monitoreo de seguridad</li>
           <li>Configurar monitoreo de errores</li>
         </ul>
       </div>
@@ -157,14 +159,13 @@ const securityConfig = {
       <div class="section">
         <h2>🛡️ Medidas de Seguridad Implementadas</h2>
         <ul>
-          <li>✅ Validación de entrada en todas las APIs</li>
-          <li>✅ Rate limiting básico</li>
-          <li>✅ Headers de seguridad</li>
-          <li>✅ Sanitización de datos</li>
-          <li>✅ Validación de tokens JWT</li>
-          <li>✅ Protección CSRF</li>
+          <li>✅ Validación de entrada en las APIs</li>
+          <li>✅ Rate limiting básico en memoria</li>
+          <li>✅ Headers de seguridad con CSP basado en nonce</li>
+          <li>✅ Sanitización de datos en formularios</li>
           <li>✅ Validación de roles de usuario</li>
-          <li>✅ Logging de errores</li>
+          <li>⚠️ Pendiente implementar protección CSRF</li>
+          <li>⚠️ Pendiente habilitar logging/monitorización centralizados</li>
         </ul>
       </div>
 

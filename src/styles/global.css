@@ -26,6 +26,50 @@
   --radius-xl: 1rem;
 }
 
+.text-token-primary {
+  color: var(--text-primary);
+}
+
+.text-token-secondary {
+  color: var(--text-secondary);
+}
+
+.text-token-muted {
+  color: var(--text-muted);
+}
+
+.text-token-brand {
+  color: var(--primary);
+}
+
+.bg-token-primary {
+  background: var(--primary);
+}
+
+.bg-token-primary-gradient {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+}
+
+.bg-token-surface-alt {
+  background: var(--surface-alt);
+}
+
+.border-token-primary {
+  border-color: var(--primary);
+}
+
+.delay-60ms {
+  transition-delay: 60ms !important;
+}
+
+.delay-220ms {
+  transition-delay: 220ms !important;
+}
+
+.delay-300ms {
+  transition-delay: 300ms !important;
+}
+
 html, body {
   height: 100%;
   background: linear-gradient(
@@ -303,6 +347,12 @@ html, body {
   background: color-mix(in srgb, var(--primary) 10%, #F8FAFC);
   border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
   border-radius: 999px;
+}
+
+.badge-accent {
+  background: color-mix(in srgb, var(--primary) 85%, #fff);
+  color: #fff;
+  border: none;
 }
 
 /* Botón ghost con borde de marca */

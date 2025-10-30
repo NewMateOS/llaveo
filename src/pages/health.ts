@@ -1,11 +1,12 @@
 import type { APIRoute } from 'astro';
-import { createSecureResponse } from '../lib/security';
+import { createSecureResponse, resolveSecurityOptions } from '../lib/security';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request }) => {
   const startTime = Date.now();
-  
+  const securityOptions = resolveSecurityOptions(request);
+
   try {
     // Verificar conectividad básica
     const healthCheck = {
@@ -42,7 +43,7 @@ export const GET: APIRoute = async ({ request }) => {
       healthCheck.warnings = ['Variables de entorno no completamente configuradas'];
     }
 
-    return createSecureResponse(healthCheck, healthCheck.status === 'healthy' ? 200 : 503);
+    return createSecureResponse(healthCheck, healthCheck.status === 'healthy' ? 200 : 503, securityOptions);
 
   } catch (error) {
     console.error('Health check failed:', error);
@@ -52,6 +53,6 @@ export const GET: APIRoute = async ({ request }) => {
       timestamp: new Date().toISOString(),
       error: 'Health check failed',
       details: error instanceof Error ? error.message : 'Unknown error'
-    }, 500);
+    }, 500, securityOptions);
   }
 };

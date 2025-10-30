@@ -1,21 +1,23 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '../../lib/supabase';
-import { 
-  rateLimit, 
-  getClientIP, 
-  createSecureResponse, 
+import {
+  rateLimit,
+  getClientIP,
+  createSecureResponse,
   createErrorResponse,
-  sanitizeInput 
+  resolveSecurityOptions,
+  sanitizeInput
 } from '../../lib/security';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request }) => {
   try {
+    const securityOptions = resolveSecurityOptions(request);
     // Rate limiting
     const clientIP = getClientIP(request);
     if (!rateLimit(`search_get_${clientIP}`, 120, 15 * 60 * 1000)) {
-      return createErrorResponse('Demasiadas solicitudes. Intenta más tarde.', 429);
+      return createErrorResponse('Demasiadas solicitudes. Intenta más tarde.', 429, undefined, securityOptions);
     }
 
     const u = new URL(request.url);
@@ -42,7 +44,7 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     if (status && !['venta', 'alquiler'].includes(status)) {
-      return createErrorResponse('Estado inválido. Use "venta" o "alquiler"', 400);
+      return createErrorResponse('Estado inválido. Use "venta" o "alquiler"', 400, undefined, securityOptions);
     }
 
     // Validar números
@@ -52,19 +54,19 @@ export const GET: APIRoute = async ({ request }) => {
 
     // Validar rangos lógicos
     if (minRoomsNum < 0 || minRoomsNum > 20) {
-      return createErrorResponse('Número de habitaciones inválido', 400);
+      return createErrorResponse('Número de habitaciones inválido', 400, undefined, securityOptions);
     }
 
     if (minPriceNum < 0 || minPriceNum > 100000000) {
-      return createErrorResponse('Precio mínimo inválido', 400);
+      return createErrorResponse('Precio mínimo inválido', 400, undefined, securityOptions);
     }
 
     if (maxPriceNum < 0 || maxPriceNum > 100000000) {
-      return createErrorResponse('Precio máximo inválido', 400);
+      return createErrorResponse('Precio máximo inválido', 400, undefined, securityOptions);
     }
 
     if (minPriceNum > 0 && maxPriceNum > 0 && minPriceNum > maxPriceNum) {
-      return createErrorResponse('El precio mínimo no puede ser mayor que el máximo', 400);
+      return createErrorResponse('El precio mínimo no puede ser mayor que el máximo', 400, undefined, securityOptions);
     }
 
     // Construir query
@@ -131,13 +133,19 @@ export const GET: APIRoute = async ({ request }) => {
     
     if (error) {
       console.error('Error fetching properties:', error);
-      return createErrorResponse('Error al buscar propiedades: ' + error.message, 500);
+      return createErrorResponse('Error al buscar propiedades: ' + error.message, 500, undefined, securityOptions);
     }
 
-    return createSecureResponse({ items: data || [] });
+    return createSecureResponse({ items: data || [] }, 200, securityOptions);
 
   } catch (error) {
     console.error('Search API Error:', error);
-    return createErrorResponse('Error interno del servidor: ' + (error instanceof Error ? error.message : 'Unknown error'), 500);
+    const securityOptions = resolveSecurityOptions(request);
+    return createErrorResponse(
+      'Error interno del servidor: ' + (error instanceof Error ? error.message : 'Unknown error'),
+      500,
+      undefined,
+      securityOptions,
+    );
   }
 };

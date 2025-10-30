@@ -13,11 +13,11 @@ const redirectTo = url.searchParams.get('redirect') || '/';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
-  <body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: system-ui;">
-    <div style="text-align: center;">
+  <body class="min-h-screen flex items-center justify-center font-[system-ui]">
+    <div class="text-center">
       <p>Procesando autenticación...</p>
     </div>
-    <script>
+    <script nonce={Astro.locals.cspNonce}>
       import { getSupabaseClient } from '../../lib/supabase-client.js';
       
       (async () => {

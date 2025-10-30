@@ -42,7 +42,7 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
               </svg>
             </a>
             <div id="user-info-section" class="flex items-center gap-2">
-              <span id="user-name" class="text-sm font-medium hidden" style="color: var(--text-primary);"></span>
+              <span id="user-name" class="text-sm font-medium hidden text-token-primary"></span>
               <button 
                 onclick="handleLogout()"
                 class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors duration-200 hidden"
@@ -60,7 +60,7 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
     <div class="max-w-7xl mx-auto px-6 py-8">
       <!-- Page Header -->
       <div class="mb-8 reveal">
-        <h1 class="text-3xl font-bold mb-2" style="color: var(--text-primary);">
+        <h1 class="text-3xl font-bold mb-2 text-token-primary">
           Mis Favoritos
         </h1>
         <p class="text-gray-600">
@@ -104,7 +104,7 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
           </svg>
         </div>
-        <h3 class="text-xl font-semibold mb-2" style="color: var(--text-primary);">
+        <h3 class="text-xl font-semibold mb-2 text-token-primary">
           No tienes favoritos aún
         </h3>
         <p class="text-gray-600 mb-6">
@@ -132,7 +132,7 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
       <!-- Modal Header -->
       <div class="px-6 py-4 border-b border-gray-100">
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold" style="color: var(--text-primary);">Consultar Propiedad</h3>
+          <h3 class="text-lg font-semibold text-token-primary">Consultar Propiedad</h3>
           <button
             onclick="closeInquiryModal()"
             class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors duration-200 focus-ring"
@@ -150,7 +150,7 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
           <input type="hidden" id="propertyId" name="property_id" />
           
           <div>
-            <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Nombre *</label>
+            <label class="block text-sm font-medium mb-2 text-token-primary">Nombre *</label>
             <input
               type="text"
               name="name"
@@ -161,7 +161,7 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Email *</label>
+            <label class="block text-sm font-medium mb-2 text-token-primary">Email *</label>
             <input
               type="email"
               name="email"
@@ -172,7 +172,7 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Teléfono</label>
+            <label class="block text-sm font-medium mb-2 text-token-primary">Teléfono</label>
             <input
               type="tel"
               name="phone"
@@ -182,7 +182,7 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">Mensaje</label>
+            <label class="block text-sm font-medium mb-2 text-token-primary">Mensaje</label>
             <textarea
               name="message"
               rows="4"
@@ -194,8 +194,7 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
           <div class="flex items-center gap-3 pt-4">
             <button
               type="submit"
-              class="flex-1 py-3 px-4 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200"
-              style="background: var(--primary);"
+              class="flex-1 py-3 px-4 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 bg-token-primary"
             >
               Enviar Consulta
             </button>
@@ -212,7 +211,7 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
     </div>
   </div>
 
-  <script>
+  <script nonce={Astro.locals.cspNonce}>
     // Header elevated on scroll
     const headerEl = document.querySelector('.app-header');
     const elevateHeader = () => {
@@ -349,16 +348,16 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
                       <img src="${firstImgUrl}" alt="${property.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" onload="this.previousElementSibling && (this.previousElementSibling.style.display='none')" />
                     </a>
                     <div class="absolute top-3 right-3">
-                      <span class="px-3 py-1 rounded-full text-xs font-medium text-white shadow-sm badge-soft" style="background: color-mix(in srgb, var(--primary) 85%, #fff); color: #fff; border: none;">
+                      <span class="px-3 py-1 rounded-full text-xs font-medium text-white shadow-sm badge-soft badge-accent">
                         ${property.status === 'venta' ? 'Venta' : 'Alquiler'}
                       </span>
                     </div>
                   </div>
                   <div class="p-6 flex flex-col gap-5">
                     <a href="/propiedad/${property.id}" class="block hover:opacity-80 transition-opacity duration-200">
-                      <h2 class="text-xl font-semibold mb-2 line-clamp-1 md:line-clamp-2" style="color: var(--text-primary);">${property.title}</h2>
+                      <h2 class="text-xl font-semibold mb-2 line-clamp-1 md:line-clamp-2 text-token-primary">${property.title}</h2>
                       <div class="flex items-center mb-3 text-gray-600">
-                        <svg class="w-5 h-5 mr-2" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 mr-2 text-token-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         </svg>
@@ -367,7 +366,7 @@ function firstImg(images: Array<{ url: string; sort_order?: number }> | null | u
                       <p class="text-gray-600 line-clamp-1 md:line-clamp-2 mb-4">${property.description || 'Descripción no disponible'}</p>
                     </a>
                     <div class="flex items-center justify-between">
-                      <div class="text-2xl font-bold" style="color: var(--primary);">
+                      <div class="text-2xl font-bold text-token-brand">
                         ${new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(Number(property.price||0))}
                       </div>
                       <a href="/propiedad/${property.id}" class="px-5 py-3 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 btn-primary">

@@ -1,13 +1,14 @@
 import type { APIRoute } from 'astro';
 import { createClient } from '@supabase/supabase-js';
-import { 
-  rateLimit, 
-  validateEmail, 
-  validatePropertyId, 
-  getClientIP, 
-  createSecureResponse, 
+import {
+  rateLimit,
+  validateEmail,
+  validatePropertyId,
+  getClientIP,
+  createSecureResponse,
   createErrorResponse,
-  sanitizeInput 
+  resolveSecurityOptions,
+  sanitizeInput
 } from '../../lib/security';
 
 // Usar service_role si está disponible, sino usar cliente anónimo con RLS
@@ -47,20 +48,23 @@ export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
   try {
+    const securityOptions = resolveSecurityOptions(request);
     // Verificar que Supabase está configurado
     if (!supabase || supabaseConfigError) {
       console.error('❌ Supabase no configurado:', supabaseConfigError || 'Cliente no inicializado');
       return createErrorResponse(
         `Error de configuración del servidor: ${supabaseConfigError || 'Variables de entorno de Supabase no configuradas'}. ` +
         'Verifica que PUBLIC_SUPABASE_URL y PUBLIC_SUPABASE_ANON_KEY estén configuradas en tu archivo .env',
-        500
+        500,
+        undefined,
+        securityOptions
       );
     }
 
     // Rate limiting
     const clientIP = getClientIP(request);
     if (!rateLimit(`inquiry_post_${clientIP}`, 10, 15 * 60 * 1000)) {
-      return createErrorResponse('Demasiadas solicitudes. Intenta más tarde.', 429);
+      return createErrorResponse('Demasiadas solicitudes. Intenta más tarde.', 429, undefined, securityOptions);
     }
 
     const body = await request.json();
@@ -68,12 +72,12 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Validar que el body existe
     if (!body || typeof body !== 'object') {
-      return createErrorResponse('Formulario inválido. Por favor, completa todos los campos requeridos.', 400);
+      return createErrorResponse('Formulario inválido. Por favor, completa todos los campos requeridos.', 400, undefined, securityOptions);
     }
 
     // Validar campos requeridos
     if (!property_id || !name || !email) {
-      return createErrorResponse('Faltan campos requeridos: Nombre y Email son obligatorios', 400);
+      return createErrorResponse('Faltan campos requeridos: Nombre y Email son obligatorios', 400, undefined, securityOptions);
     }
 
     // Sanitizar inputs
@@ -85,32 +89,32 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Validar que los campos no estén vacíos después de trim
     if (!property_id || !name || !email) {
-      return createErrorResponse('Los campos Nombre y Email no pueden estar vacíos', 400);
+      return createErrorResponse('Los campos Nombre y Email no pueden estar vacíos', 400, undefined, securityOptions);
     }
 
     // Validar formato de email
     if (!validateEmail(email)) {
-      return createErrorResponse('Email inválido', 400);
+      return createErrorResponse('Email inválido', 400, undefined, securityOptions);
     }
 
     // Validar property_id
     if (!validatePropertyId(property_id)) {
-      return createErrorResponse('ID de propiedad inválido', 400);
+      return createErrorResponse('ID de propiedad inválido', 400, undefined, securityOptions);
     }
 
     // Validar nombre
     if (name.length < 2 || name.length > 100) {
-      return createErrorResponse('El nombre debe tener entre 2 y 100 caracteres', 400);
+      return createErrorResponse('El nombre debe tener entre 2 y 100 caracteres', 400, undefined, securityOptions);
     }
 
     // Validar teléfono si se proporciona
     if (phone && phone.length > 20) {
-      return createErrorResponse('Teléfono inválido', 400);
+      return createErrorResponse('Teléfono inválido', 400, undefined, securityOptions);
     }
 
     // Validar mensaje si se proporciona
     if (message && message.length > 1000) {
-      return createErrorResponse('El mensaje no puede exceder 1000 caracteres', 400);
+      return createErrorResponse('El mensaje no puede exceder 1000 caracteres', 400, undefined, securityOptions);
     }
 
     // Validar que la propiedad existe y está activa
@@ -122,7 +126,7 @@ export const POST: APIRoute = async ({ request }) => {
       .single();
 
     if (propertyError || !property) {
-      return createErrorResponse('Propiedad no encontrada o no disponible', 404);
+      return createErrorResponse('Propiedad no encontrada o no disponible', 404, undefined, securityOptions);
     }
 
     // Insertar la consulta
@@ -161,17 +165,23 @@ export const POST: APIRoute = async ({ request }) => {
         errorMessage = 'Error: La propiedad especificada no existe.';
       }
       
-      return createErrorResponse(errorMessage, 500);
+      return createErrorResponse(errorMessage, 500, undefined, securityOptions);
     }
 
-    return createSecureResponse({ 
-      success: true, 
+    return createSecureResponse({
+      success: true,
       message: 'Consulta enviada correctamente',
-      inquiry: data 
-    }, 201);
+      inquiry: data
+    }, 201, securityOptions);
 
   } catch (error) {
     console.error('API Error:', error);
-    return createErrorResponse('Error interno del servidor: ' + (error instanceof Error ? error.message : 'Unknown error'), 500);
+    const securityOptions = resolveSecurityOptions(request);
+    return createErrorResponse(
+      'Error interno del servidor: ' + (error instanceof Error ? error.message : 'Unknown error'),
+      500,
+      undefined,
+      securityOptions,
+    );
   }
 };

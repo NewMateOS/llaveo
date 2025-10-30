@@ -1,7 +1,11 @@
 // Security utilities for LLaveo
+import { createHash, randomBytes } from 'node:crypto';
 
 // Rate limiting simple en memoria (en producción usar Redis)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+const TRUST_PROXY_HEADERS = (import.meta.env.LLAVEO_TRUST_PROXY_HEADERS || '').toLowerCase() === 'true';
+const FORCE_HTTPS = (import.meta.env.LLAVEO_FORCE_HTTPS || '').toLowerCase() === 'true';
 
 export interface SecurityHeaders {
   'Content-Security-Policy': string;
@@ -12,11 +16,45 @@ export interface SecurityHeaders {
   'Strict-Transport-Security'?: string;
 }
 
-export function getSecurityHeaders(isHttps: boolean = false): SecurityHeaders {
+export interface SecurityHeaderOptions {
+  isHttps?: boolean;
+  cspNonce?: string;
+}
+
+export interface SecurityContext {
+  isHttps: boolean;
+  cspNonce?: string;
+}
+
+export function createSecurityContext(request?: Request, generateNonce: boolean = true): SecurityContext {
+  return {
+    isHttps: FORCE_HTTPS || inferHttps(request),
+    cspNonce: generateNonce ? randomBytes(16).toString('base64') : undefined
+  };
+}
+
+export function resolveSecurityOptions(request?: Request, overrides: SecurityHeaderOptions = {}): SecurityHeaderOptions {
+  return {
+    isHttps: overrides.isHttps ?? FORCE_HTTPS || inferHttps(request),
+    cspNonce: overrides.cspNonce
+  };
+}
+
+export function getSecurityHeaders(options: SecurityHeaderOptions = {}): SecurityHeaders {
+  const scriptSrc: string[] = ["'self'", 'https://cdn.jsdelivr.net', 'https://unpkg.com'];
+  if (options.cspNonce) {
+    scriptSrc.push(`'nonce-${options.cspNonce}'`);
+  }
+
+  const styleSrc: string[] = ["'self'", 'https://fonts.googleapis.com'];
+  if (options.cspNonce) {
+    styleSrc.push(`'nonce-${options.cspNonce}'`);
+  }
+
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    `script-src ${scriptSrc.join(' ')}`,
+    `style-src ${styleSrc.join(' ')}`,
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: https: blob:",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
@@ -35,16 +73,16 @@ export function getSecurityHeaders(isHttps: boolean = false): SecurityHeaders {
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
   };
 
-  if (isHttps) {
+  if (options.isHttps) {
     headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload';
   }
 
   return headers;
 }
 
-export function applySecurityHeaders(response: Response, isHttps: boolean = false): Response {
-  const headers = getSecurityHeaders(isHttps);
-  
+export function applySecurityHeaders(response: Response, options: SecurityHeaderOptions = {}): Response {
+  const headers = getSecurityHeaders(options);
+
   Object.entries(headers).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
@@ -147,18 +185,45 @@ export function validatePropertyId(id: string): boolean {
 }
 
 export function getClientIP(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  const realIP = request.headers.get('x-real-ip');
   const cfConnectingIP = request.headers.get('cf-connecting-ip');
-  
-  if (cfConnectingIP) return cfConnectingIP;
-  if (realIP) return realIP;
-  if (forwarded) return forwarded.split(',')[0].trim();
-  
-  return 'unknown';
+  if (cfConnectingIP) {
+    return cfConnectingIP;
+  }
+
+  if (TRUST_PROXY_HEADERS) {
+    const realIP = request.headers.get('x-real-ip');
+    if (realIP) {
+      return realIP;
+    }
+
+    const forwarded = request.headers.get('x-forwarded-for');
+    if (forwarded) {
+      return forwarded.split(',')[0]!.trim();
+    }
+
+    const forwardedHeader = request.headers.get('forwarded');
+    if (forwardedHeader) {
+      const parsed = parseForwardedFor(forwardedHeader);
+      if (parsed) {
+        return parsed;
+      }
+    }
+  }
+
+  const vercelIP = request.headers.get('x-vercel-ip');
+  if (vercelIP) {
+    return vercelIP;
+  }
+
+  const fingerprint = `${request.headers.get('user-agent') ?? ''}|${request.headers.get('accept-language') ?? ''}`;
+  if (!fingerprint.trim()) {
+    return 'anonymous';
+  }
+
+  return `anon-${createHash('sha256').update(fingerprint).digest('hex').slice(0, 16)}`;
 }
 
-export function createSecureResponse(data: any, status: number = 200): Response {
+export function createSecureResponse(data: any, status: number = 200, options: SecurityHeaderOptions = {}): Response {
   const response = new Response(JSON.stringify(data), {
     status,
     headers: {
@@ -169,14 +234,64 @@ export function createSecureResponse(data: any, status: number = 200): Response 
     }
   });
 
-  return applySecurityHeaders(response, false);
+  return applySecurityHeaders(response, options);
 }
 
-export function createErrorResponse(message: string, status: number = 400, details?: any): Response {
+export function createErrorResponse(message: string, status: number = 400, details?: any, options: SecurityHeaderOptions = {}): Response {
   const errorData = {
     error: message,
     ...(details && { details })
   };
 
-  return createSecureResponse(errorData, status);
+  return createSecureResponse(errorData, status, options);
+}
+
+function inferHttps(request?: Request): boolean {
+  if (!request) {
+    return false;
+  }
+
+  const directProtocol = new URL(request.url).protocol;
+  if (directProtocol === 'https:') {
+    return true;
+  }
+
+  const forwardedProto = request.headers.get('x-forwarded-proto') ?? request.headers.get('x-forwarded-protocol');
+  if (forwardedProto) {
+    return forwardedProto.split(',')[0]!.trim().toLowerCase() === 'https';
+  }
+
+  const forwardedHeader = request.headers.get('forwarded');
+  if (forwardedHeader && forwardedHeader.toLowerCase().includes('proto=https')) {
+    return true;
+  }
+
+  const cfVisitor = request.headers.get('cf-visitor');
+  if (cfVisitor) {
+    try {
+      const parsed = JSON.parse(cfVisitor);
+      if (parsed && typeof parsed === 'object' && parsed.scheme === 'https') {
+        return true;
+      }
+    } catch {
+      // ignore malformed header
+    }
+  }
+
+  return false;
+}
+
+function parseForwardedFor(header: string): string | null {
+  const parts = header.split(';');
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (trimmed.toLowerCase().startsWith('for=')) {
+      const value = trimmed.slice(4).replace(/^"|"$/g, '');
+      const host = value.split(',')[0]?.trim();
+      if (host) {
+        return host;
+      }
+    }
+  }
+  return null;
 }

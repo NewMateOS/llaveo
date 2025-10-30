@@ -22,8 +22,7 @@ const { value = '', city = '', status = '', minRooms = '', minPrice = '', maxPri
       
       <!-- Search Input -->
       <input
-        class="w-full sm:flex-1 outline-none text-base sm:text-lg font-normal placeholder-gray-400 focus:placeholder-gray-300 transition-colors duration-200 border border-gray-200 rounded-lg px-4 py-3.5 sm:py-3 focus-ring"
-        style="color: var(--text-primary);"
+        class="w-full sm:flex-1 outline-none text-base sm:text-lg font-normal placeholder-gray-400 focus:placeholder-gray-300 transition-colors duration-200 border border-gray-200 rounded-lg px-4 py-3.5 sm:py-3 focus-ring text-token-primary"
         type="search"
         name="q"
         placeholder="Buscar por calle, barrio o ciudad…"
@@ -167,7 +166,7 @@ const { value = '', city = '', status = '', minRooms = '', minPrice = '', maxPri
   </div>
 </form>
 
-<script>
+<script nonce={Astro.locals.cspNonce}>
   // Función para toggle de filtros
   function toggleFilters() {
     const container = document.getElementById('filters-container');
