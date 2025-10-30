@@ -1,0 +1,109 @@
+---
+const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
+---
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Términos de Uso · {brand}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white sticky top-0 z-40 shadow-sm border-b border-gray-100">
+      <div class="max-w-7xl mx-auto px-6 py-4">
+        <div class="flex justify-between items-center">
+          <a href="/" class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style="background: var(--primary);">
+              <span class="text-white font-bold text-lg">L</span>
+            </div>
+            <div class="text-2xl font-bold" style="color: var(--text-primary);">{brand}</div>
+          </a>
+          <a href="/" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors duration-200">
+            Volver
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-6 py-12">
+      <article class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 md:p-12">
+        <h1 class="text-4xl font-bold mb-8" style="color: var(--text-primary);">Términos de Uso</h1>
+        
+        <div class="text-sm text-gray-500 mb-8">
+          <p>Última actualización: {new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        </div>
+
+        <div class="prose max-w-none space-y-8">
+          <section>
+            <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">1. Aceptación de los Términos</h2>
+            <p class="text-gray-700 leading-relaxed">
+              Al acceder y utilizar {brand}, usted acepta cumplir con estos términos de uso. Si no está de acuerdo con alguna parte de estos términos, no debe utilizar nuestro servicio.
+            </p>
+          </section>
+
+          <section>
+            <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">2. Uso del Servicio</h2>
+            <p class="text-gray-700 leading-relaxed">
+              Usted se compromete a utilizar nuestro servicio únicamente para fines legales y de acuerdo con estos términos. No debe:
+            </p>
+            <ul class="list-disc pl-6 space-y-2 text-gray-700">
+              <li>Usar el servicio de manera fraudulenta o engañosa</li>
+              <li>Violar ninguna ley o regulación aplicable</li>
+              <li>Interferir con el funcionamiento del servicio</li>
+              <li>Intentar acceder a áreas restringidas del servicio</li>
+              <li>Reproducir, duplicar o copiar cualquier parte del servicio sin autorización</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">3. Cuentas de Usuario</h2>
+            <p class="text-gray-700 leading-relaxed">
+              Al crear una cuenta, usted es responsable de:
+            </p>
+            <ul class="list-disc pl-6 space-y-2 text-gray-700">
+              <li>Mantener la confidencialidad de su contraseña</li>
+              <li>Todas las actividades que ocurran bajo su cuenta</li>
+              <li>Proporcionar información precisa y actualizada</li>
+              <li>Notificarnos inmediatamente cualquier uso no autorizado</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">4. Propiedad Intelectual</h2>
+            <p class="text-gray-700 leading-relaxed">
+              El contenido del servicio, incluyendo textos, gráficos, logos, imágenes y software, es propiedad de {brand} y está protegido por leyes de propiedad intelectual.
+            </p>
+          </section>
+
+          <section>
+            <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">5. Limitación de Responsabilidad</h2>
+            <p class="text-gray-700 leading-relaxed">
+              {brand} proporciona el servicio "tal cual" sin garantías expresas o implícitas. No seremos responsables por daños indirectos, incidentales o consecuentes derivados del uso del servicio.
+            </p>
+          </section>
+
+          <section>
+            <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">6. Modificaciones</h2>
+            <p class="text-gray-700 leading-relaxed">
+              Nos reservamos el derecho de modificar estos términos en cualquier momento. Los cambios entrarán en vigencia al publicarse en esta página.
+            </p>
+          </section>
+
+          <section>
+            <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">7. Contacto</h2>
+            <p class="text-gray-700 leading-relaxed">
+              Si tiene preguntas sobre estos términos, puede contactarnos en:
+            </p>
+            <p class="text-gray-700 leading-relaxed mt-4">
+              <strong>Email:</strong> legal@{brand.toLowerCase()}.com<br>
+              <strong>Teléfono:</strong> +34 900 123 456
+            </p>
+          </section>
+        </div>
+      </article>
+    </main>
+  </body>
+</html>
+

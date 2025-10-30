@@ -56,17 +56,22 @@ export async function securityMiddleware(
           };
         }
 
-        const roleHierarchy = {
+        const roleHierarchy: Record<string, number> = {
           'viewer': 1,
           'agent': 2,
           'admin': 3
         };
 
-        if (roleHierarchy[profile.role] < roleHierarchy[options.requireRole]) {
+        // Validar que el rol del usuario existe en la jerarquía
+        const userRoleLevel = roleHierarchy[profile.role];
+        const requiredRoleLevel = roleHierarchy[options.requireRole];
+
+        // Si el rol del usuario no existe en la jerarquía o es menor al requerido, denegar acceso
+        if (userRoleLevel === undefined || requiredRoleLevel === undefined || userRoleLevel < requiredRoleLevel) {
           return {
             user: null,
             hasAccess: false,
-            error: 'Permisos insuficientes',
+            error: 'Permisos insuficientes o rol inválido',
             response: new Response(null, {
               status: 302,
               headers: { 'Location': '/access-denied' }

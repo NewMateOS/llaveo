@@ -2,7 +2,7 @@ import React from 'react';
 import { Refine } from '@refinedev/core';
 import { Layout } from 'antd';
 import 'antd/dist/reset.css';
-import { supabase } from '../lib/supabase.js';
+import { getSupabaseClient } from '../lib/supabase-client.js';
 import { hydrateClientFromServerSession } from '../lib/session-sync.js';
 import { PropertiesList, PropertiesCreate, PropertiesEdit } from './resources/properties.jsx';
 import { InquiriesList } from './resources/inquiries.jsx';
@@ -77,16 +77,19 @@ class ErrorBoundary extends React.Component {
 function RefineRoutes() {
   const [resource, setResource] = React.useState('properties');
   const [action, setAction] = React.useState('list');
+  const [id, setId] = React.useState(null);
 
   React.useEffect(() => {
     // Leer de la URL (hash routing de Refine)
+    // Formato: #/resource/action/id
     const hash = window.location.hash;
-    const match = hash.match(/#\/([^\/]+)(?:\/([^\/]+))?/);
+    const match = hash.match(/#\/([^\/]+)(?:\/([^\/]+))?(?:\/(.+))?/);
     
     if (match) {
-      const [, res, act] = match;
+      const [, res, act, resourceId] = match;
       setResource(res || 'properties');
       setAction(act || 'list');
+      setId(resourceId || null);
     } else {
       // Si no hay hash, ir a properties por defecto
       window.location.hash = '#/properties';
@@ -95,11 +98,12 @@ function RefineRoutes() {
     // Escuchar cambios en el hash
     const handleHashChange = () => {
       const newHash = window.location.hash;
-      const newMatch = newHash.match(/#\/([^\/]+)(?:\/([^\/]+))?/);
+      const newMatch = newHash.match(/#\/([^\/]+)(?:\/([^\/]+))?(?:\/(.+))?/);
       if (newMatch) {
-        const [, res, act] = newMatch;
+        const [, res, act, resourceId] = newMatch;
         setResource(res || 'properties');
         setAction(act || 'list');
+        setId(resourceId || null);
       }
     };
 
@@ -110,7 +114,7 @@ function RefineRoutes() {
   try {
     if (resource === 'properties') {
       if (action === 'create') return <PropertiesCreate />;
-      if (action === 'edit') return <PropertiesEdit />;
+      if (action === 'edit') return <PropertiesEdit id={id} />;
       return <PropertiesList />;
     }
 
@@ -157,6 +161,7 @@ function AuthGate({ children }) {
     // Verificar autenticación antes de mostrar contenido
     const initAuth = async () => {
       try {
+        const supabase = getSupabaseClient();
         await hydrateClientFromServerSession(supabase);
         const { data } = await supabase.auth.getSession();
         if (active) {
@@ -167,6 +172,7 @@ function AuthGate({ children }) {
         console.error('Error inicializando autenticación:', error);
         // Intentar obtener la sesión local como fallback
         try {
+          const supabase = getSupabaseClient();
           const { data } = await supabase.auth.getSession();
           if (active) {
             setUser(data.session?.user ?? null);
@@ -186,6 +192,7 @@ function AuthGate({ children }) {
     // Cargar auth inmediatamente (no en background)
     initAuth();
 
+    const supabase = getSupabaseClient();
     const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
       if (active) {
         setUser(session?.user ?? null);
@@ -294,12 +301,15 @@ function AuthGate({ children }) {
                 e.target.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.05)';
                 e.target.style.transform = 'translateY(0)';
               }}
-              onClick={() => supabase.auth.signInWithOAuth({ 
-                provider: 'google', 
-                options: { 
-                  queryParams: { hd: import.meta.env.PUBLIC_ALLOWED_GOOGLE_DOMAIN } 
-                }
-              })}
+              onClick={() => {
+                const supabase = getSupabaseClient();
+                supabase.auth.signInWithOAuth({ 
+                  provider: 'google', 
+                  options: { 
+                    queryParams: { hd: import.meta.env.PUBLIC_ALLOWED_GOOGLE_DOMAIN } 
+                  }
+                });
+              }}
             >
               Entrar con Google
             </button>
@@ -318,6 +328,7 @@ function AuthGate({ children }) {
 
 export default function AdminApp() {
   const handleSignOut = React.useCallback(async () => {
+    const supabase = getSupabaseClient();
     const { error } = await supabase.auth.signOut();
     try {
       await fetch('/api/auth/session', {
@@ -347,14 +358,13 @@ export default function AdminApp() {
         dataProvider={{
           default: {
             getList: async ({ resource, pagination, sorters, filters, meta }) => {
+              const supabase = getSupabaseClient();
               let query = supabase.from(resource);
               
               // Para consultas, incluir información de la propiedad
               if (resource === 'inquiries') {
-                query = query.select(`
-                  *,
-                  property:properties(title, id)
-                `);
+                // Usar select simple primero, luego agregaremos el join si es necesario
+                query = query.select('*');
               } else if (resource === 'properties') {
                 // Para propiedades, incluir imágenes
                 query = query.select(`
@@ -379,44 +389,68 @@ export default function AdminApp() {
                 query = query.order('created_at', { ascending: false });
               }
               
-              // Aplicar filtros si existen
-              if (filters && filters.length > 0) {
-                filters.forEach(filter => {
-                  if (filter.operator === 'eq') {
-                    query = query.eq(filter.field, filter.value);
-                  } else if (filter.operator === 'ne') {
-                    query = query.neq(filter.field, filter.value);
-                  } else if (filter.operator === 'gte') {
-                    query = query.gte(filter.field, filter.value);
-                  } else if (filter.operator === 'lte') {
-                    query = query.lte(filter.field, filter.value);
-                  }
-                });
+              // Función auxiliar para aplicar filtros de manera consistente
+              const applyFilters = (queryBuilder) => {
+                if (filters && filters.length > 0) {
+                  filters.forEach(filter => {
+                    if (filter.operator === 'eq') {
+                      queryBuilder = queryBuilder.eq(filter.field, filter.value);
+                    } else if (filter.operator === 'ne') {
+                      queryBuilder = queryBuilder.neq(filter.field, filter.value);
+                    } else if (filter.operator === 'gte') {
+                      queryBuilder = queryBuilder.gte(filter.field, filter.value);
+                    } else if (filter.operator === 'lte') {
+                      queryBuilder = queryBuilder.lte(filter.field, filter.value);
+                    }
+                  });
+                }
+                return queryBuilder;
+              };
+
+              // Primero obtener el total count usando la misma lógica de filtros
+              let countQuery = supabase.from(resource).select('*', { count: 'exact', head: true });
+              countQuery = applyFilters(countQuery);
+              const { count: totalCount, error: countError } = await countQuery;
+              
+              if (countError) throw countError;
+
+              // Aplicar los mismos filtros al query de datos usando la función auxiliar
+              query = applyFilters(query);
+              
+              const { data, error } = await query;
+              
+              if (error) {
+                console.error(`Error fetching ${resource}:`, error);
+                throw error;
               }
               
-              const { data, error, count } = await query;
-              if (error) throw error;
-              
-              // Obtener el total para paginación correcta
-              const countQuery = supabase.from(resource).select('*', { count: 'exact', head: true });
-              if (filters && filters.length > 0) {
-                filters.forEach(filter => {
-                  if (filter.operator === 'eq') {
-                    countQuery.eq(filter.field, filter.value);
-                  } else if (filter.operator === 'ne') {
-                    countQuery.neq(filter.field, filter.value);
-                  } else if (filter.operator === 'gte') {
-                    countQuery.gte(filter.field, filter.value);
-                  } else if (filter.operator === 'lte') {
-                    countQuery.lte(filter.field, filter.value);
+              // Para inquiries, obtener información de propiedades si está disponible
+              let resultData = data || [];
+              if (resource === 'inquiries' && resultData.length > 0) {
+                // Obtener IDs de propiedades únicas
+                const propertyIds = [...new Set(resultData.map(item => item.property_id).filter(Boolean))];
+                if (propertyIds.length > 0) {
+                  const supabaseForQuery = getSupabaseClient();
+                  const { data: properties } = await supabaseForQuery
+                    .from('properties')
+                    .select('id, title')
+                    .in('id', propertyIds);
+                  
+                  // Mapear propiedades a inquiries
+                  if (properties) {
+                    const propertyMap = new Map(properties.map(p => [p.id, p]));
+                    resultData = resultData.map(inquiry => ({
+                      ...inquiry,
+                      property: propertyMap.get(inquiry.property_id) || null
+                    }));
                   }
-                });
+                }
               }
-              const { count: totalCount } = await countQuery;
               
-              return { data: data || [], total: totalCount || 0 };
+              return { data: resultData, total: totalCount || 0 };
             },
             getOne: async ({ resource, id, meta }) => {
+              const supabase = getSupabaseClient();
               let query = supabase.from(resource);
               
               // Incluir relaciones según el recurso
@@ -426,10 +460,7 @@ export default function AdminApp() {
                   property_images(url, sort_order, id)
                 `);
               } else if (resource === 'inquiries') {
-                query = query.select(`
-                  *,
-                  property:properties(title, id)
-                `);
+                query = query.select('*, property:properties(title, id)');
               } else {
                 query = query.select('*');
               }
@@ -439,16 +470,19 @@ export default function AdminApp() {
               return { data };
             },
             create: async ({ resource, variables, meta }) => {
+              const supabase = getSupabaseClient();
               const { data, error } = await supabase.from(resource).insert(variables).select().single();
               if (error) throw error;
               return { data };
             },
             update: async ({ resource, id, variables, meta }) => {
+              const supabase = getSupabaseClient();
               const { data, error } = await supabase.from(resource).update(variables).eq('id', id).select().single();
               if (error) throw error;
               return { data };
             },
             deleteOne: async ({ resource, id, meta }) => {
+              const supabase = getSupabaseClient();
               const { error } = await supabase.from(resource).delete().eq('id', id);
               if (error) throw error;
               return { data: { id } };

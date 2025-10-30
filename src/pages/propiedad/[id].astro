@@ -3,6 +3,7 @@ export const prerender = false;
 
 import { supabase } from '../../lib/supabase';
 import FavoriteButton from '../../components/FavoriteButton.astro';
+import '../../styles/global.css';
 
 const { id } = Astro.params;
 if (!id) {
@@ -66,41 +67,22 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{property.title} · {brand}</title>
-    <style>
-      :root {
-        --primary: #EB9561;
-        --primary-light: #F2B085;
-        --primary-dark: #D17A3F;
-        --secondary: #2D3748;
-        --accent: #F7FAFC;
-        --text-primary: #1A202C;
-        --text-secondary: #4A5568;
-        --text-muted: #718096;
-        --surface: #FFFFFF;
-        --surface-elevated: #F7FAFC;
-        --border: #E2E8F0;
-        --shadow: rgba(235, 149, 97, 0.1);
-        --shadow-lg: rgba(235, 149, 97, 0.15);
-      }
-    </style>
+    
   </head>
-  <body class="min-h-screen bg-gray-50">
+  <body class="min-h-screen">
     <!-- Header - Material Design App Bar -->
-    <header class="bg-white sticky top-0 z-40 shadow-sm border-b border-gray-100">
+    <header class="bg-white sticky top-0 z-40 shadow-sm border-b border-gray-100 app-header">
       <div class="max-w-7xl mx-auto px-6 py-4">
         <div class="flex justify-between items-center">
           <!-- Logo Section -->
           <div class="flex items-center gap-3">
             <a href="/" class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style="background: var(--primary);">
-                <span class="text-white font-bold text-lg">L</span>
-              </div>
-              <div class="text-2xl font-bold" style="color: var(--text-primary);">{brand}</div>
+              <img src="/logo.svg" alt={brand} class="h-10 w-auto" />
             </a>
           </div>
           
           <!-- Back Button -->
-          <a href="/resultados" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors duration-200">
+          <a href="/resultados" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors duration-200 link-underline focus-ring">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
             </svg>
@@ -112,10 +94,10 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
 
     <main class="max-w-7xl mx-auto px-6 py-8">
       <!-- Property Header -->
-      <div class="mb-8">
+      <div class="mb-6 md:mb-8 reveal">
         <div class="flex items-start justify-between mb-4">
           <div>
-            <h1 class="text-4xl font-bold mb-2" style="color: var(--text-primary);">{property.title}</h1>
+            <h1 class="text-4xl font-bold mb-2 line-clamp-2 md:line-clamp-3" style="color: var(--text-primary);">{property.title}</h1>
             <div class="flex items-center text-gray-600 mb-4">
               <svg class="w-5 h-5 mr-2" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
@@ -126,7 +108,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
           </div>
           
           <!-- Status Badge -->
-          <div class="px-4 py-2 rounded-full text-sm font-medium text-white shadow-sm" style="background: var(--primary);">
+          <div class="px-4 py-2 rounded-full text-sm font-medium text-white shadow-sm badge-soft" style="background: color-mix(in srgb, var(--primary) 85%, #fff); color: #fff; border: none;">
             {property.status === 'venta' ? 'Venta' : 'Alquiler'}
           </div>
         </div>
@@ -141,11 +123,11 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
       </div>
 
       <!-- Main Content -->
-      <div class="grid lg:grid-cols-3 gap-8">
+      <div class="grid lg:grid-cols-3 gap-6 md:gap-8">
         <!-- Left Column -->
         <div class="lg:col-span-2 space-y-8">
           <!-- Main Image -->
-          <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden reveal">
             <img 
               src={firstImg(property.property_images)} 
               alt={property.title} 
@@ -155,14 +137,14 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
           
           <!-- Description -->
           {property.description && (
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 reveal">
               <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-primary);">Descripción</h2>
               <p class="text-gray-700 leading-relaxed text-lg">{property.description}</p>
             </div>
           )}
 
           <!-- Features Grid -->
-          <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 reveal">
             <h2 class="text-2xl font-semibold mb-6" style="color: var(--text-primary);">Características</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div class="text-center p-4 rounded-lg hover:bg-gray-50 transition-colors duration-200">
@@ -209,7 +191,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
 
           <!-- Image Gallery -->
           {property.property_images && property.property_images.length > 1 && (
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 reveal">
               <h2 class="text-2xl font-semibold mb-6" style="color: var(--text-primary);">Galería de imágenes</h2>
               <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {property.property_images.slice(1).map((img) => (
@@ -229,12 +211,11 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
 
         <!-- Right Sidebar -->
         <div class="lg:col-span-1">
-          <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-24">
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-24 reveal">
             <h3 class="text-lg font-semibold mb-6" style="color: var(--text-primary);">Contactar</h3>
             
             <button 
-              class="w-full py-3 px-4 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 mb-6"
-              style="background: var(--primary);"
+              class="w-full py-3 px-4 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 mb-6 btn-primary"
               onclick={`showInquiryModal('${property.id}', '${property.title}')`}
             >
               Consultar sobre esta propiedad
@@ -292,7 +273,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
             <h3 class="text-lg font-semibold" style="color: var(--text-primary);">Consultar sobre esta propiedad</h3>
             <button 
               onclick="closeInquiryModal()"
-              class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors duration-200"
+              class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors duration-200 focus-ring"
             >
               <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -351,14 +332,13 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
             <button 
               type="button" 
               onclick="closeInquiryModal()" 
-              class="flex-1 py-3 px-4 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors duration-200"
+              class="flex-1 py-3 px-4 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors duration-200 focus-ring"
             >
               Cancelar
             </button>
             <button 
               type="submit" 
-              class="flex-1 py-3 px-4 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200"
-              style="background: var(--primary);"
+              class="flex-1 py-3 px-4 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 btn-primary"
             >
               Enviar consulta
             </button>
@@ -372,7 +352,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
       <div class="relative max-w-4xl max-h-full">
         <button 
           onclick="closeImageModal()"
-          class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors duration-200"
+          class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors duration-200 focus-ring"
         >
           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -383,7 +363,34 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
     </div>
 
     <script>
-      function showInquiryModal(propertyId: string, propertyTitle: string) {
+      // Header elevated on scroll
+      const headerEl = document.querySelector('header.app-header');
+      const elevateHeader = () => {
+        if (!headerEl) return;
+        if (window.scrollY > 6) headerEl.classList.add('header-elevated');
+        else headerEl.classList.remove('header-elevated');
+      };
+      window.addEventListener('scroll', elevateHeader, { passive: true });
+      elevateHeader();
+
+      // Reveal on scroll
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!prefersReducedMotion && 'IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible');
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.12, rootMargin: '0px 0px -10% 0px' });
+        document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+      } else {
+        document.querySelectorAll('.reveal').forEach((el) => el.classList.add('is-visible'));
+      }
+
+      // Exponer funciones globalmente para que estén disponibles desde atributos onclick
+      (window as any).showInquiryModal = function(propertyId: string, propertyTitle: string) {
         const propertyIdElement = document.getElementById('propertyId') as HTMLInputElement;
         const inquiryModal = document.getElementById('inquiryModal');
         if (propertyIdElement && inquiryModal) {
@@ -391,9 +398,9 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
           inquiryModal.classList.remove('hidden');
           inquiryModal.classList.add('flex');
         }
-      }
+      };
 
-      function closeInquiryModal() {
+      (window as any).closeInquiryModal = function() {
         const inquiryModal = document.getElementById('inquiryModal');
         const inquiryForm = document.getElementById('inquiryForm') as HTMLFormElement;
         if (inquiryModal) {
@@ -403,9 +410,9 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
         if (inquiryForm) {
           inquiryForm.reset();
         }
-      }
+      };
 
-      function showImageModal(imageUrl: string) {
+      (window as any).showImageModal = function(imageUrl: string) {
         const modalImage = document.getElementById('modalImage') as HTMLImageElement;
         const imageModal = document.getElementById('imageModal');
         if (modalImage && imageModal) {
@@ -413,17 +420,18 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
           imageModal.classList.remove('hidden');
           imageModal.classList.add('flex');
         }
-      }
+      };
 
-      function closeImageModal() {
+      (window as any).closeImageModal = function() {
         const imageModal = document.getElementById('imageModal');
         if (imageModal) {
           imageModal.classList.add('hidden');
           imageModal.classList.remove('flex');
         }
-      }
+      };
 
-      async function submitInquiry(event: Event) {
+      // Exponer submitInquiry globalmente para que funcione desde onsubmit
+      (window as any).submitInquiry = async function(event: Event) {
         event.preventDefault();
         const form = event.target as HTMLFormElement;
         const formData = new FormData(form);
@@ -437,16 +445,33 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
           });
 
           if (response.ok) {
-            alert('¡Consulta enviada correctamente! Te contactaremos pronto.');
-            closeInquiryModal();
+            const result = await response.json().catch(() => ({}));
+            alert(result.message || '¡Consulta enviada correctamente! Te contactaremos pronto.');
+            (window as any).closeInquiryModal();
           } else {
-            throw new Error('Error al enviar la consulta');
+            // Intentar obtener el mensaje de error del servidor
+            let errorMessage = 'Error al enviar la consulta. Inténtalo de nuevo.';
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.error || errorData.message || errorMessage;
+              console.error('Error del servidor:', errorData);
+            } catch (e) {
+              // Si no se puede parsear el JSON, usar el status text
+              errorMessage = response.statusText || errorMessage;
+              console.error('Error parseando respuesta:', e);
+            }
+            alert(errorMessage);
+            console.error('Error completo en submitInquiry:', {
+              status: response.status,
+              statusText: response.statusText,
+              message: errorMessage
+            });
           }
         } catch (error) {
-          alert('Error al enviar la consulta. Inténtalo de nuevo.');
-          console.error(error);
+          console.error('Error en submitInquiry (catch):', error);
+          alert('Error al enviar la consulta. Por favor, verifica tu conexión e inténtalo de nuevo.');
         }
-      }
+      };
 
       // Cerrar modales al hacer clic fuera
       const inquiryModal = document.getElementById('inquiryModal');

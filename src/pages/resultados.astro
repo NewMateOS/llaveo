@@ -1,6 +1,7 @@
 ---
 import SearchBar from '../components/SearchBar.astro';
 import FavoriteButton from '../components/FavoriteButton.astro';
+import '../styles/global.css';
 
 const api = '/api/search';
 const url = new URL(api, Astro.request.url);
@@ -48,41 +49,22 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Resultados · {brand}</title>
-    <style>
-      :root {
-        --primary: #EB9561;
-        --primary-light: #F2B085;
-        --primary-dark: #D17A3F;
-        --secondary: #2D3748;
-        --accent: #F7FAFC;
-        --text-primary: #1A202C;
-        --text-secondary: #4A5568;
-        --text-muted: #718096;
-        --surface: #FFFFFF;
-        --surface-elevated: #F7FAFC;
-        --border: #E2E8F0;
-        --shadow: rgba(235, 149, 97, 0.1);
-        --shadow-lg: rgba(235, 149, 97, 0.15);
-      }
-    </style>
+    
   </head>
-  <body class="min-h-screen bg-gray-50">
+  <body class="min-h-screen">
     <!-- Header - Material Design App Bar -->
-    <header class="bg-white sticky top-0 z-40 shadow-sm border-b border-gray-100">
+    <header class="bg-white sticky top-0 z-40 shadow-sm border-b border-gray-100 app-header">
       <div class="max-w-7xl mx-auto px-6 py-4">
         <div class="flex justify-between items-center">
           <!-- Logo Section -->
           <div class="flex items-center gap-3">
             <a href="/" class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm" style="background: var(--primary);">
-                <span class="text-white font-bold text-lg">L</span>
-              </div>
-              <div class="text-2xl font-bold" style="color: var(--text-primary);">{brand}</div>
+              <img src="/logo.svg" alt={brand} class="h-10 w-auto" />
             </a>
           </div>
           
           <!-- Back Button -->
-          <a href="/" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors duration-200">
+          <a href="/" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors duration-200 link-underline focus-ring">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
             </svg>
@@ -94,28 +76,23 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
 
     <main class="max-w-7xl mx-auto px-6 py-8">
       <!-- Page Header -->
-      <div class="mb-8">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h1 class="text-3xl font-bold" style="color: var(--text-primary);">Resultados de búsqueda</h1>
-            <p class="text-gray-600 mt-2">{items.length} propiedades encontradas</p>
-          </div>
-          
-          <!-- Filter Toggle -->
-          <button 
-            id="filterToggle"
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 hover:bg-gray-50 transition-colors duration-200"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-            </svg>
-            Filtros
-          </button>
+      <div class="mb-8 reveal">
+        <!-- Search Bar (Sticky en móvil) -->
+        <div class="mb-6 sm:mb-8 sticky top-20 z-40 lg:static">
+          <SearchBar 
+            value={Astro.url.searchParams.get('q') || ''}
+            city={Astro.url.searchParams.get('city') || ''}
+            status={Astro.url.searchParams.get('status') || ''}
+            minRooms={Astro.url.searchParams.get('minRooms') || ''}
+            minPrice={Astro.url.searchParams.get('minPrice') || ''}
+            maxPrice={Astro.url.searchParams.get('maxPrice') || ''}
+          />
         </div>
-        
-        <!-- Search Bar -->
-        <div class="mb-6">
-          <SearchBar value={Astro.url.searchParams.get('q') || ''} />
+        <div class="mb-2">
+          <h1 class="text-3xl md:text-4xl font-bold tracking-tight" style="color: var(--text-primary);">Resultados de búsqueda</h1>
+          <div class="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-gray-100 shadow-sm">
+            <span class="text-sm font-medium" style="color: var(--text-secondary);">{items.length} propiedades</span>
+          </div>
         </div>
       </div>
 
@@ -127,23 +104,56 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
         )}
 
           <!-- Results Grid -->
-          <div class="space-y-8">
-        {items.map((it) => (
-          <article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200 w-full">
-            <div class="flex flex-col lg:flex-row">
-              <!-- Image Container -->
-              <div class="relative overflow-hidden h-64 lg:h-80 lg:w-1/2">
+          <!-- Skeletons (se ocultan cuando el contenido está listo) -->
+          <div id="results-skeletons" class="space-y-6 md:space-y-8">
+            {Array.from({ length: 3 }).map(() => (
+              <article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden w-full">
+                <div class="flex flex-col lg:flex-row">
+                  <div class="relative overflow-hidden h-64 lg:h-80 lg:w-1/2 shimmer"></div>
+                  <div class="p-8 lg:w-1/2 flex flex-col justify-between">
+                    <div class="space-y-4">
+                      <div class="h-7 w-3/4 shimmer rounded"></div>
+                      <div class="h-4 w-1/2 shimmer rounded"></div>
+                      <div class="h-16 w-full shimmer rounded"></div>
+                      <div class="flex gap-4">
+                        <div class="h-5 w-24 shimmer rounded"></div>
+                        <div class="h-5 w-24 shimmer rounded"></div>
+                        <div class="h-5 w-24 shimmer rounded"></div>
+                      </div>
+                    </div>
+                    <div class="mt-6 flex gap-3">
+                      <div class="h-11 flex-1 shimmer rounded-lg"></div>
+                      <div class="h-11 w-32 shimmer rounded-lg"></div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+          
+          <div id="results-list" class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 hidden">
+            {items.map((it) => (
+              <article class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200 h-full reveal card-hover hover-lift tilt-hover group">
+                <!-- Image Container -->
+              <div class="relative overflow-hidden h-56 md:h-64">
                 <a href={`/propiedad/${it.id}`} class="block">
+                  <div class="absolute inset-0 shimmer"></div>
                   <img
                     src={firstImg(it.property_images) || 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=800&h=600&fit=crop'}
                     alt={it.title} 
-                    class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
-                    loading="lazy" 
+                    class="w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.02]" 
+                    width="800"
+                    height="600"
+                    loading="lazy"
+                    decoding="async"
+                    onload="this.previousElementSibling && (this.previousElementSibling.style.display='none')"
                   />
                 </a>
+                <!-- Image Overlay on hover -->
+                <div class="pointer-events-none absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
                 <!-- Status Badge -->
                 <div class="absolute top-4 right-4">
-                  <span class="px-3 py-1 rounded-full text-xs font-medium text-white shadow-sm" style="background: var(--primary);">
+                  <span class="px-3 py-1 rounded-full text-xs font-medium text-white shadow-sm badge-soft" style="background: color-mix(in srgb, var(--primary) 85%, #fff); color: #fff; border: none;">
                     {it.status === 'venta' ? 'Venta' : 'Alquiler'}
                   </span>
                 </div>
@@ -154,10 +164,10 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
               </div>
               
               <!-- Content -->
-              <div class="p-8 lg:w-1/2 flex flex-col justify-between">
+              <div class="p-6 flex flex-col gap-5">
                 <div>
                   <a href={`/propiedad/${it.id}`} class="block hover:opacity-80 transition-opacity duration-200">
-                    <h2 class="text-2xl font-semibold mb-4 hover:text-primary transition-colors duration-200" style="color: var(--text-primary);">
+                    <h2 class="text-2xl font-semibold mb-4 hover:text-primary transition-colors duration-200 line-clamp-1 md:line-clamp-2" style="color: var(--text-primary);">
                       {it.title}
                     </h2>
                     
@@ -171,7 +181,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
                     </div>
                     
                     <!-- Description -->
-                    <p class="text-gray-600 mb-6 leading-relaxed">
+                    <p class="text-gray-600 mb-4 leading-relaxed line-clamp-1 md:line-clamp-2">
                       {it.description || 'Descripción no disponible'}
                     </p>
                     
@@ -207,28 +217,31 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
                         {new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(Number(it.price||0))}
                       </span>
                     </div>
-                    <FavoriteButton propertyId={it.id} />
+                    
                   </div>
                   
                   <!-- Actions -->
                   <div class="flex gap-3">
-                    <a href={`/propiedad/${it.id}`} class="flex-1 px-6 py-3 rounded-lg text-base font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 text-center" style="background: var(--primary);">
+                    <a href={`/propiedad/${it.id}`} class="flex-1 px-6 py-3 rounded-lg text-base font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 text-center btn-primary focus-ring">
                       Ver detalles
                     </a>
                     <button 
-                      class="px-6 py-3 rounded-lg text-base font-medium border border-gray-200 hover:bg-gray-50 transition-colors duration-200"
-                      onclick={`showInquiryModal('${it.id}', '${it.title}')`}
+                      class="px-6 py-3 rounded-lg text-base font-medium btn-ghost focus-ring"
+                      data-id={it.id}
+                      data-title={it.title}
+                      onclick="showInquiryModal(this.dataset.id, this.dataset.title)"
                     >
                       Consultar
                     </button>
                   </div>
                 </div>
               </div>
-            </div>
-          </article>
-        ))}
-      </div>
+            </article>
+            ))}
+          </div>
 
+      )}
+      
       <!-- Empty State -->
       {!fetchError && items.length === 0 && (
         <div class="text-center py-16">
@@ -239,7 +252,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
           </div>
           <h3 class="text-xl font-semibold mb-2" style="color: var(--text-primary);">No encontramos propiedades</h3>
           <p class="text-gray-600 mb-6">Intenta ajustar los filtros de búsqueda para encontrar más resultados.</p>
-          <a href="/" class="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200" style="background: var(--primary);">
+          <a href="/" class="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 btn-primary">
             Nueva búsqueda
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -258,7 +271,7 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
             <h3 class="text-lg font-semibold" style="color: var(--text-primary);">Consultar sobre esta propiedad</h3>
             <button 
               onclick="closeInquiryModal()"
-              class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors duration-200"
+              class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors duration-200 focus-ring"
             >
               <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -317,14 +330,13 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
             <button 
               type="button" 
               onclick="closeInquiryModal()" 
-              class="flex-1 py-3 px-4 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors duration-200"
+              class="flex-1 py-3 px-4 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors duration-200 focus-ring"
             >
               Cancelar
             </button>
             <button 
               type="submit" 
-              class="flex-1 py-3 px-4 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200"
-              style="background: var(--primary);"
+              class="flex-1 py-3 px-4 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all duration-200 btn-primary"
             >
               Enviar consulta
             </button>
@@ -334,10 +346,62 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
     </div>
 
     <script>
+      // Header elevated on scroll
+      const headerEl = document.querySelector('header.app-header');
+      const elevateHeader = () => {
+        if (!headerEl) return;
+        if (window.scrollY > 6) headerEl.classList.add('header-elevated');
+        else headerEl.classList.remove('header-elevated');
+      };
+      window.addEventListener('scroll', elevateHeader, { passive: true });
+      elevateHeader();
+
+      // Mostrar resultados y ocultar skeletons cuando el contenido esté listo
+      const skeletons = document.getElementById('results-skeletons');
+      const resultsList = document.getElementById('results-list');
+      const showResults = () => {
+        if (skeletons) skeletons.classList.add('hidden');
+        if (resultsList) resultsList.classList.remove('hidden');
+      };
+      if (document.readyState === 'complete') {
+        showResults();
+      } else {
+        window.addEventListener('load', showResults, { once: true });
+        // Fallback por si load tarda mucho
+        setTimeout(showResults, 1200);
+      }
+
+      // Reveal on scroll - optimizado con IntersectionObserver
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!prefersReducedMotion && 'IntersectionObserver' in window) {
+        // Usar requestIdleCallback si está disponible para mejor rendimiento
+        const observeReveal = () => {
+          const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+              }
+            });
+          }, { threshold: 0.1, rootMargin: '0px 0px -5% 0px' });
+          
+          document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+        };
+        
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(observeReveal, { timeout: 2000 });
+        } else {
+          setTimeout(observeReveal, 0);
+        }
+      } else {
+        document.querySelectorAll('.reveal').forEach((el) => el.classList.add('is-visible'));
+      }
+
       let currentPropertyId = '';
       let currentPropertyTitle = '';
 
-      function showInquiryModal(propertyId: string, propertyTitle: string) {
+      // Exponer funciones globalmente para atributos onclick
+      (window as any).showInquiryModal = function(propertyId: string, propertyTitle: string) {
         currentPropertyId = propertyId;
         currentPropertyTitle = propertyTitle;
         const propertyIdElement = document.getElementById('propertyId') as HTMLInputElement;
@@ -347,9 +411,9 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
           inquiryModal.classList.remove('hidden');
           inquiryModal.classList.add('flex');
         }
-      }
+      };
 
-      function closeInquiryModal() {
+      (window as any).closeInquiryModal = function() {
         const inquiryModal = document.getElementById('inquiryModal');
         const inquiryForm = document.getElementById('inquiryForm') as HTMLFormElement;
         if (inquiryModal) {
@@ -359,9 +423,10 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
         if (inquiryForm) {
           inquiryForm.reset();
         }
-      }
+      };
 
-      async function submitInquiry(event: Event) {
+      // Exponer submitInquiry globalmente para que funcione desde onsubmit
+      (window as any).submitInquiry = async function(event: Event) {
         event.preventDefault();
         const form = event.target as HTMLFormElement;
         const formData = new FormData(form);
@@ -375,23 +440,39 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
           });
 
           if (response.ok) {
-            alert('¡Consulta enviada correctamente! Te contactaremos pronto.');
-            closeInquiryModal();
+            const result = await response.json().catch(() => ({}));
+            alert(result.message || '¡Consulta enviada correctamente! Te contactaremos pronto.');
+            (window as any).closeInquiryModal();
           } else {
-            throw new Error('Error al enviar la consulta');
+            // Intentar obtener el mensaje de error del servidor
+            let errorMessage = 'Error al enviar la consulta. Inténtalo de nuevo.';
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.error || errorData.message || errorMessage;
+            } catch (e) {
+              // Si no se puede parsear el JSON, usar el status text
+              errorMessage = response.statusText || errorMessage;
+              console.error('Error parseando respuesta:', e);
+            }
+            alert(errorMessage);
+            console.error('Error en submitInquiry:', {
+              status: response.status,
+              statusText: response.statusText,
+              message: errorMessage
+            });
           }
         } catch (error) {
-          alert('Error al enviar la consulta. Inténtalo de nuevo.');
-          console.error(error);
+          console.error('Error en submitInquiry (catch):', error);
+          alert('Error al enviar la consulta. Por favor, verifica tu conexión e inténtalo de nuevo.');
         }
-      }
+      };
 
       // Cerrar modal al hacer clic fuera
       const inquiryModal = document.getElementById('inquiryModal');
       if (inquiryModal) {
         inquiryModal.addEventListener('click', (e) => {
           if ((e.target as HTMLElement).id === 'inquiryModal') {
-            closeInquiryModal();
+            (window as any).closeInquiryModal();
           }
         });
       }
@@ -402,6 +483,14 @@ const brand = import.meta.env.PUBLIC_BRAND_NAME || 'LLAVE';
       if ((window as any).loadFavoritesState) {
         (window as any).loadFavoritesState();
       }
+
+      // Función para toggle de filtros en la barra de búsqueda
+      (window as any).toggleResultadosFilters = function() {
+        const filtersContainer = document.getElementById('filters-container');
+        if (filtersContainer) {
+          filtersContainer.classList.toggle('hidden');
+        }
+      };
     </script>
   </body>
 </html>
